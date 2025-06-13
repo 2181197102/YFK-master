@@ -12,7 +12,7 @@ data_mgmt_bp = Blueprint('data_management', __name__)
 
 @data_mgmt_bp.route('/access-success/user/<user_id>', methods=['GET'])
 @jwt_required()
-@role_required(['管理员', '科研人员'])
+@role_required('ADMIN', 'RESEARCHER') # 注意不要写成 @role_required(['ADMIN', 'RESEARCHER']) ，这样写代表一个人需要同时拥有这两个角色才可以访问该请求
 def get_user_access_success(user_id):
     """获取用户的访问成功率数据"""
     try:
@@ -33,12 +33,15 @@ def get_user_access_success(user_id):
 
         records = query.order_by(AccessSuccessTracker.created_at.desc()).all()
 
+        for record in records:
+            print(record.to_dict())
+
         data = [{
             'id': record.id,
-            'num_as': record.num_as,
-            'num_af': record.num_af,
-            'success_rate': record.num_as / (record.num_as + record.num_af) if (
-                                                                                           record.num_as + record.num_af) > 0 else 0,
+            'num_as': record.ast_num_as,
+            'num_af': record.ast_num_af,
+            'success_rate': record.ast_num_as / (record.ast_num_as + record.ast_num_af) if (
+                                                                                                       record.ast_num_as + record.ast_num_af) > 0 else 0,
             'created_at': record.created_at.isoformat(),
             'updated_at': record.updated_at.isoformat() if record.updated_at else None
         } for record in records]

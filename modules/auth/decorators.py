@@ -13,7 +13,8 @@ def role_required(*required_roles):
             try:
                 claims = get_jwt()
                 user_roles = claims.get('roles', [])
-
+                print("访问者角色：" + ", ".join(user_roles))
+                print("请求所需角色：" + ", ".join([str(r) for r in required_roles]))
                 # 检查用户是否具有所需角色之一
                 if not any(role in user_roles for role in required_roles):
                     return jsonify({'error': '权限不足'}), 403
