@@ -14,14 +14,17 @@ YFK-master/
 ├── models/
 │   ├── __init__.py
 │   └── models.py              # 数据库表对应的表模型结构
-├── modules/
-│   ├── auth/
-│   │   ├── routes.py          # 认证服务
-│   │   └── decorator.py       # 角色权限装饰器
-│   ├── user_management/
-│   │   └── routes.py          # 用户管理服务
-│   └── data_management/
-│       └── routes.py          # 信任值计算所需的数据的动态记录服务
+├──modules/
+│	├── auth/
+│	│   ├── routes.py
+│	│   ├── decorator.py
+│	│   └── models.py              # 认证服务的模型
+│	├── user_management/
+│	│   ├── routes.py
+│	│   └── models.py              # 用户管理的模型
+│	├── data_management/
+│	│   ├── routes.py
+│	│   └── models.py              # 数据管理的模型
 ├── utils/
 │   └── extensions.py          # 存放各种扩展（如 db, jwt）的实例
 └── venv/
@@ -123,15 +126,16 @@ key：application/json
 
 ```
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0OTU1OTk2MywianRpIjoiNzMwNzllZjYtOWYxMi00ZGVlLWJhZGMtM2ZmZDFlM2QyMzgyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6MSwibmJmIjoxNzQ5NTU5OTYzLCJleHAiOjE3NDk2NDYzNjMsInVzZXJfaWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlcyI6WyJBRE1JTiJdfQ.yzjMwXOQk594cAFs89XoqV32VSsjyXNQeSIWEhTkPIY",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0OTgzNzYzMiwianRpIjoiOWU3YzQ0ZmQtMjhmYy00NTBjLWIwMDctYmZkNzE4ZTAzMjViIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NDk4Mzc2MzIsImV4cCI6MTc0OTkyNDAzMiwidXNlcl9pZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGVfY29kZSI6IkFETUlOIiwiZ3JvdXBfbmFtZSI6Ilx1N2JhMVx1NzQwNlx1NTQ1OFx1NmQ0Ylx1OGJkNVx1NTMzYlx1OTY2MiJ9.PFfQjJMaA31xRk-9YOX1wF_koic3BMU74DE9bj7O3-A",
   "user": {
-    "email": "admin@example.com",
+    "age": 30,
+    "gender": "M",
+    "group_name": "管理员测试医院",
     "id": 1,
-    "roles": [
-      "ADMIN"
-    ],
+    "name": "系统管理员",
+    "role_code": "ADMIN",
+    "role_name": "管理员",
     "username": "admin"
   }
 }
 ```
-
