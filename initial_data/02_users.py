@@ -1,6 +1,6 @@
 # initial_data/02_users.py
 
-from models.models import User # 只需要 User 模型
+from modules.auth.models import User # 只需要 User 模型
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 

@@ -1,6 +1,7 @@
 # initial_data/07_access_time_tracker.py
 
-from models.models import AccessTimeTracker, User
+from modules.data_management.models import AccessTimeTracker
+from modules.auth.models import  User
 from datetime import datetime, date, timedelta
 import random
 

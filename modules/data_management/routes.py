@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models.models import (db, User, AccessSuccessTracker, OperationBehaviorTracker,
+from modules.data_management.models import (db, AccessSuccessTracker, OperationBehaviorTracker,
                            DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker)
+from modules.auth.models import  User
 from modules.auth.decorators import role_required
 from datetime import datetime
 from sqlalchemy import func

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models.models import db, AccessSuccessTracker, OperationBehaviorTracker, DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker
+from modules.data_management.models import db, AccessSuccessTracker, OperationBehaviorTracker, DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker
 from modules.auth.decorators import admin_required, researcher_or_admin
 import uuid
 

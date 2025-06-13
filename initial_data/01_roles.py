@@ -1,6 +1,6 @@
 # initial_data/01_roles.py
 
-from models.models import Role
+from modules.auth.models import Role
 from datetime import datetime
 
 # RBAC角色配置

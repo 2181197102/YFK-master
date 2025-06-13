@@ -1,6 +1,7 @@
 # initial_data/08_access_location_tracker.py
 
-from models.models import AccessLocationTracker, User
+from modules.data_management.models import AccessLocationTracker
+from modules.auth.models import  User
 from datetime import datetime, date, timedelta
 import random
 import json

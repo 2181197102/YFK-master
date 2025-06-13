@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.security import generate_password_hash
-from models.models import db, User, Role, UserRole
+from modules.auth.models import db, User, Role, UserRole
 from modules.auth.decorators import admin_required
 import uuid
 from datetime import datetime

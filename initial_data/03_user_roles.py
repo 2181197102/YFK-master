@@ -1,6 +1,6 @@
 # initial_data/03_user_roles.py
 
-from models.models import User, Role, UserRole
+from modules.auth.models import User, Role, UserRole
 from datetime import datetime
 
 def insert_data(db):

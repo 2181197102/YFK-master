@@ -1,6 +1,7 @@
 # initial_data/05_operation_behavior_tracker.py
 
-from models.models import OperationBehaviorTracker, User
+from modules.data_management.models import OperationBehaviorTracker
+from modules.auth.models import  User
 from datetime import datetime, date, timedelta
 
 def insert_data(db):

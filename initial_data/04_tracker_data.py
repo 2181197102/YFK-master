@@ -1,6 +1,7 @@
 # initial_data/04_tracker_data.py
 
-from models.models import AccessSuccessTracker, User
+from modules.data_management.models import AccessSuccessTracker
+from modules.auth.models import  User
 from datetime import datetime, date, timedelta
 
 def insert_data(db):

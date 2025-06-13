@@ -1,6 +1,7 @@
 # initial_data/06_data_sensitivity_tracker.py
 
-from models.models import DataSensitivityTracker, User
+from modules.data_management.models import DataSensitivityTracker
+from modules.auth.models import  User
 from datetime import datetime, date, timedelta
 
 def insert_data(db):
