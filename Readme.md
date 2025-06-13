@@ -12,18 +12,17 @@ YFK-master/
 │   ├── roles.py               # 存放角色初始数据
 │   └── ...                    # 其他表的初始数据文件
 ├── models/
-│   ├── __init__.py
-│   └── models.py              # 数据库表对应的表模型结构
+│   └──__init__.py			  # 各个服务的数据库模型注册文件
 ├──modules/
 │	├── auth/
-│	│   ├── routes.py
-│	│   ├── decorator.py
+│	│   ├── routes.py              # 认证服务
+│	│   ├── decorator.py           # 角色权限装饰器
 │	│   └── models.py              # 认证服务的模型
 │	├── user_management/
-│	│   ├── routes.py
+│	│   ├── routes.py              # 用户管理服务
 │	│   └── models.py              # 用户管理的模型
 │	├── data_management/
-│	│   ├── routes.py
+│	│   ├── routes.py              # 数据管理服务
 │	│   └── models.py              # 数据管理的模型
 ├── utils/
 │   └── extensions.py          # 存放各种扩展（如 db, jwt）的实例
