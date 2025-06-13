@@ -39,7 +39,7 @@ class Config:
 
     # 应用配置
     APP_HOST = os.environ.get('APP_HOST', '0.0.0.0')
-    APP_PORT = int(os.environ.get('APP_PORT', 5000))
+    APP_PORT = int(os.environ.get('APP_PORT', 7878))
 
     # CORS配置
     CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
@@ -53,14 +53,6 @@ class Config:
         'EMERGENCY_DOCTOR': '急救医生',
         'RESEARCHER': '科研人员',
         'ADMIN': '管理员'
-    }
-
-    # 权限级别配置
-    PERMISSION_LEVELS = {
-        'READ': 1,
-        'WRITE': 2,
-        'DELETE': 4,
-        'ADMIN': 8
     }
 
 
