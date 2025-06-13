@@ -33,10 +33,10 @@ YFK-master/
 
 ## 快速开始
 
-### 1.将项目#克隆到本地
+### 1.将项目克隆到本地
 
 ```
-git clone 
+git clone https://github.com/2181197102/YFK-master.git
 ```
 
 ### 2.配置环境
