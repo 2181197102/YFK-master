@@ -3,10 +3,16 @@ from flask_cors import CORS
 from config import config
 import os
 from utils.extensions import db, jwt
+from datetime import datetime
+import pytz
 
 
 def create_app(config_name=None):
     app = Flask(__name__)
+
+    print("当前本地时间:", datetime.now())
+    print("当前 UTC 时间:", datetime.utcnow())
+    print("当前北京时间:", datetime.now(pytz.timezone("Asia/Shanghai")))
 
     # 配置应用
     config_name = config_name or os.getenv('FLASK_ENV', 'default')
@@ -44,7 +50,10 @@ def create_app(config_name=None):
 
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
-        return jsonify({'message': 'Invalid token'}), 401
+        return jsonify({
+            'message': 'Invalid token',
+            'error': str(error)
+        }), 401
 
     # 健康检查
     @app.route('/health')
