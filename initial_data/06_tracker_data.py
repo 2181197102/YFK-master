@@ -1,4 +1,4 @@
-# initial_data/04_tracker_data.py
+# initial_data/06_tracker_data.py
 
 from modules.data_management.models import AccessSuccessTracker
 from modules.auth.models import  User
@@ -34,8 +34,8 @@ def insert_data(db):
                     ast_num_as=10 + i * 2,  # 示例: 10, 12, 14 成功访问
                     ast_num_af=1 + i,      # 示例: 1, 2, 3 失败访问
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加管理员用户在 {record_date} 的追踪器数据。")
@@ -53,8 +53,8 @@ def insert_data(db):
                     ast_num_as=5 + i,      # 示例: 5, 6, 7 成功访问
                     ast_num_af=0,          # 示例: 0, 0, 0 失败访问
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 patient_alice 用户在 {record_date} 的追踪器数据。")

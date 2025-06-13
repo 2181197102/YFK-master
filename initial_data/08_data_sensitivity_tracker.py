@@ -1,4 +1,4 @@
-# initial_data/06_data_sensitivity_tracker.py
+# initial_data/08_data_sensitivity_tracker.py
 
 from modules.data_management.models import DataSensitivityTracker
 from modules.auth.models import  User
@@ -40,8 +40,8 @@ def insert_data(db):
                     ds_num4=2, # 敏感度级别4（最高）
                     # ds_a, ds_b, ds_c, ds_d 保持默认值
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加管理员用户在 {record_date} 的敏感度访问追踪数据。")
@@ -62,8 +62,8 @@ def insert_data(db):
                     ds_num3=0,
                     ds_num4=0,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 patient_alice 用户在 {record_date} 的敏感度访问追踪数据。")
@@ -84,8 +84,8 @@ def insert_data(db):
                     ds_num3=7 + i,
                     ds_num4=1 + i,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 dr_smith 用户在 {record_date} 的敏感度访问追踪数据。")
@@ -106,8 +106,8 @@ def insert_data(db):
                     ds_num3=10 + i,
                     ds_num4=3,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 researcher_eve 用户在 {record_date} 的敏感度访问追踪数据。")

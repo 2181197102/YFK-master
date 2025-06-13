@@ -1,111 +1,62 @@
 from functools import wraps
-from flask import jsonify
+from flask import jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt
 
+# ---- 角色常量（角色代码）----
+ADMIN = "ADMIN"
+PATIENT = "PATIENT"
+FAMILY_DOCTOR = "FAMILY_DOCTOR"
+ATTENDING_DOCTOR = "ATTENDING_DOCTOR"
+CROSS_HOSPITAL_DOCTOR = "CROSS_HOSPITAL_DOCTOR"
+EMERGENCY_DOCTOR = "EMERGENCY_DOCTOR"
+RESEARCHER = "RESEARCHER"
 
-def role_required(*required_roles):
-    """角色权限装饰器"""
+DOCTOR_ROLES = {
+    FAMILY_DOCTOR,
+    ATTENDING_DOCTOR,
+    CROSS_HOSPITAL_DOCTOR,
+    EMERGENCY_DOCTOR,
+}
+PATIENT_OR_DOCTOR_ROLES = DOCTOR_ROLES | {PATIENT}
+RESEARCHER_OR_ADMIN_ROLES = {RESEARCHER, ADMIN}
 
-    def decorator(f):
-        @wraps(f)
+
+def role_required(*allowed_roles: str):
+    """通用角色权限装饰器，只识别 JWT.claims 中的 'role' 字符串"""
+    allowed_set = set(allowed_roles)
+
+    def decorator(fn):
+        @wraps(fn)
         @jwt_required()
-        def decorated_function(*args, **kwargs):
+        def wrapper(*args, **kwargs):
             try:
-                claims = get_jwt()
-                user_roles = claims.get('roles', [])
-                print("访问者角色：" + ", ".join(user_roles))
-                print("请求所需角色：" + ", ".join([str(r) for r in required_roles]))
-                # 检查用户是否具有所需角色之一
-                if not any(role in user_roles for role in required_roles):
-                    return jsonify({'error': '权限不足'}), 403
+                role = get_jwt().get("role_code", None)
+                current_app.logger.debug(f"访问者角色: {role}, 允许角色: {allowed_set}")
 
-                return f(*args, **kwargs)
-            except Exception as e:
-                return jsonify({'error': '权限验证失败'}), 500
+                if not role or role not in allowed_set:
+                    return jsonify({"error": "权限不足"}), 403
 
-        return decorated_function
+                return fn(*args, **kwargs)
+
+            except Exception:
+                current_app.logger.exception("权限验证失败")
+                return jsonify({"error": "权限验证失败"}), 500
+
+        return wrapper
 
     return decorator
 
 
-def admin_required(f):
-    """管理员权限装饰器"""
+# ---- 语义化装饰器 ----
 
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        try:
-            claims = get_jwt()
-            user_roles = claims.get('roles', [])
+def admin_required(fn):
+    return role_required(ADMIN)(fn)
 
-            if '管理员' not in user_roles:
-                return jsonify({'error': '需要管理员权限'}), 403
+def doctor_only(fn):
+    return role_required(*DOCTOR_ROLES)(fn)
 
-            return f(*args, **kwargs)
-        except Exception as e:
-            return jsonify({'error': '权限验证失败'}), 500
+def patient_or_doctor(fn):
+    return role_required(*PATIENT_OR_DOCTOR_ROLES)(fn)
 
-    return decorated_function
-
-
-def doctor_only(f):
-    """医生角色装饰器（所有医生角色）"""
-
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        try:
-            claims = get_jwt()
-            user_roles = claims.get('roles', [])
-
-            doctor_roles = ['家庭医生', '主治医生', '跨院医生', '急救医生']
-            if not any(role in user_roles for role in doctor_roles):
-                return jsonify({'error': '需要医生权限'}), 403
-
-            return f(*args, **kwargs)
-        except Exception as e:
-            return jsonify({'error': '权限验证失败'}), 500
-
-    return decorated_function
-
-
-def patient_or_doctor(f):
-    """患者或医生权限装饰器"""
-
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        try:
-            claims = get_jwt()
-            user_roles = claims.get('roles', [])
-
-            allowed_roles = ['患者', '家庭医生', '主治医生', '跨院医生', '急救医生']
-            if not any(role in user_roles for role in allowed_roles):
-                return jsonify({'error': '需要患者或医生权限'}), 403
-
-            return f(*args, **kwargs)
-        except Exception as e:
-            return jsonify({'error': '权限验证失败'}), 500
-
-    return decorated_function
-
-
-def researcher_or_admin(f):
-    """科研人员或管理员权限装饰器"""
-
-    @wraps(f)
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        try:
-            claims = get_jwt()
-            user_roles = claims.get('roles', [])
-
-            allowed_roles = ['科研人员', '管理员']
-            if not any(role in user_roles for role in allowed_roles):
-                return jsonify({'error': '需要科研人员或管理员权限'}), 403
-
-            return f(*args, **kwargs)
-        except Exception as e:
-            return jsonify({'error': '权限验证失败'}), 500
-
-    return decorated_function
+def researcher_or_admin(fn):
+    return role_required(*RESEARCHER_OR_ADMIN_ROLES)(fn)

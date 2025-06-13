@@ -1,208 +1,249 @@
-from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import check_password_hash, generate_password_hash
+"""
+用户认证相关接口（JWT）
+--------------------------------
+依赖：
+    - Flask‑JWT‑Extended
+    - utils.extensions.db  (SQLAlchemy 实例)
+模型：
+    - User  (password 字段保存哈希)
+    - Role  (role_code / role_name)
+    - UserRoleRelation (一对一；每名用户只应有 0‑1 条记录)
+"""
 from datetime import timedelta
-import uuid
-from modules.auth.models import db, User, Role, UserRole
 
-auth_bp = Blueprint('auth', __name__)
+from flask import Blueprint, current_app, jsonify, request
+from flask_jwt_extended import (
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+)
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from utils.extensions import db
+from modules.auth.models import User, Role, UserRoleRelation
+
+auth_bp = Blueprint("auth", __name__)
 
 
-@auth_bp.route('/login', methods=['POST'])
+# ---------- 内部辅助 ----------
+def _get_user_role(user_id: int):
+    """返回 (role_code, role_name) 或 (None, None)"""
+    rel = UserRoleRelation.query.filter_by(user_id=user_id).first()
+    if not rel:
+        return None, None
+    role = Role.query.get(rel.role_id)
+    return (role.role_code, role.role_name) if role else (None, None)
+
+def _get_user_group(user_id: int):
+    """返回 group_name 或 None """
+    from modules.auth.models import Group, UserGroupRelation
+
+    rel = UserGroupRelation.query.filter_by(user_id=user_id).first()
+    if not rel:
+        return None
+    group = Group.query.get(rel.group_id)
+    return group.group_name if group else None
+
+
+
+# ---------- 登录 ----------
+@auth_bp.route("/login", methods=["POST"])
 def login():
-    """用户登录"""
+    """用户登录，成功后签发 24h JWT"""
     try:
-        data = request.get_json()
-        if not data or not data.get('username') or not data.get('password'):
-            return jsonify({'error': '用户名和密码不能为空'}), 400
+        data = request.get_json(silent=True) or {}
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
 
-        username = data['username']
-        password = data['password']
+        if not username or not password:
+            return jsonify({"error": "用户名和密码不能为空"}), 400
 
-        # 查找用户
         user = User.query.filter_by(username=username).first()
-        if not user or not check_password_hash(user.password_hash, password):
-            return jsonify({'error': '用户名或密码错误'}), 401
+        if not user or not check_password_hash(user.password, password):
+            return jsonify({"error": "用户名或密码错误"}), 401
 
-        # 检查用户状态
-        if not user.is_active:
-            return jsonify({'error': '用户已被禁用'}), 401
+        if not user.enable:
+            return jsonify({"error": "用户已被禁用"}), 403
 
-        # 获取用户角色
-        user_roles = db.session.query(Role).join(UserRole).filter(UserRole.user_id == user.id).all()
-        roles = [role.name for role in user_roles]
+        role_code, role_name = _get_user_role(user.id)
+        group_name = _get_user_group(user.id)
 
-        # 创建JWT token
         additional_claims = {
-            'user_id': user.id,
-            'username': user.username,
-            'roles': roles
+            "user_id": user.id,
+            "username": user.username,
+            "role_code": role_code,
+            "group_name": group_name,
         }
-
         access_token = create_access_token(
             identity=str(user.id),
             expires_delta=timedelta(hours=24),
-            additional_claims=additional_claims
+            additional_claims=additional_claims,
         )
 
-        return jsonify({
-            'access_token': access_token,
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'roles': roles
-            }
-        }), 200
-
+        return (
+            jsonify(
+                {
+                    "access_token": access_token,
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "name": user.name,
+                        "age": user.age,
+                        "gender": user.gender,
+                        "role_code": role_code,
+                        "role_name": role_name,
+                        "group_name": group_name,
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        current_app.logger.error(f'Login error: {str(e)}')
-        return jsonify({'error': '登录失败'}), 500
+        current_app.logger.exception("Login error")
+        return jsonify({"error": "登录失败"}), 500
 
 
-@auth_bp.route('/register', methods=['POST'])
+# ---------- 注册 ----------
+@auth_bp.route("/register", methods=["POST"])
 def register():
-    """用户注册"""
+    """
+    用户注册  
+    前端需提交：username / password / name / age / gender / role  
+    其中 role 可填角色代码 (PATIENT 等) 或角色名称 (患者 等)。
+    """
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': '请求数据不能为空'}), 400
+        data = request.get_json(silent=True) or {}
 
-        required_fields = ['username', 'password', 'email', 'role']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'{field}不能为空'}), 400
+        # 基本字段校验
+        required = ["username", "password", "name", "age", "gender", "role"]
+        miss = [f for f in required if not data.get(f)]
+        if miss:
+            return jsonify({"error": f"字段缺失: {', '.join(miss)}"}), 400
 
-        username = data['username']
-        password = data['password']
-        email = data['email']
-        role_name = data['role']
+        username = data["username"].strip()
+        password = data["password"].strip()
+        name = data["name"].strip()
+        age = int(data["age"])
+        gender = data["gender"].strip()
+        role_input = data["role"].strip()  # 可为中文或代码
 
-        # 验证角色是否存在
-        valid_roles = ['患者', '家庭医生', '主治医生', '跨院医生', '急救医生', '科研人员', '管理员']
-        if role_name not in valid_roles:
-            return jsonify({'error': '无效的角色'}), 400
+        if User.query.filter_by(username=username).first():
+            return jsonify({"error": "用户名已存在"}), 400
 
-        # 检查用户名是否已存在
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
-            return jsonify({'error': '用户名已存在'}), 400
+        # 查找角色（兼容 role_code 或 role_name）
+        role = Role.query.filter(
+            (Role.role_code == role_input) | (Role.role_name == role_input)
+        ).first()
+        if not role:
+            return jsonify({"error": "无效的角色"}), 400
 
-        # 检查邮箱是否已存在
-        existing_email = User.query.filter_by(email=email).first()
-        if existing_email:
-            return jsonify({'error': '邮箱已存在'}), 400
-
-        # 创建新用户
+        # 创建用户
         user = User(
-            id=str(uuid.uuid4()),
             username=username,
-            email=email,
-            password_hash=generate_password_hash(password),
-            is_active=True
+            name=name,
+            age=age,
+            gender=gender,
+            enable=True,
         )
-
+        user.password = generate_password_hash(password)
         db.session.add(user)
-        db.session.flush()  # 获取用户ID
+        db.session.flush()  # 先拿到 user.id
 
-        # 分配角色
-        role = Role.query.filter_by(name=role_name).first()
-        if role:
-            user_role = UserRole(user_id=user.id, role_id=role.id)
-            db.session.add(user_role)
+        # 绑定用户角色（确保唯一）
+        rel = UserRoleRelation(user_id=user.id, role_id=role.id)
+        db.session.add(rel)
 
         db.session.commit()
+        return (
+            jsonify(
+                {
+                    "message": "注册成功",
+                    "user": {"id": user.id, "username": user.username},
+                }
+            ),
+            201,
+        )
 
-        return jsonify({
-            'message': '注册成功',
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email
-            }
-        }), 201
-
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        current_app.logger.error(f'Register error: {str(e)}')
-        return jsonify({'error': '注册失败'}), 500
+        current_app.logger.exception("Register error")
+        return jsonify({"error": "注册失败"}), 500
 
 
-@auth_bp.route('/profile', methods=['GET'])
+# ---------- 获取个人信息 ----------
+@auth_bp.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
-    """获取用户信息"""
+    """已登录用户查询自己的资料"""
     try:
         user_id = get_jwt_identity()
         user = User.query.get(user_id)
-
         if not user:
-            return jsonify({'error': '用户不存在'}), 404
+            return jsonify({"error": "用户不存在"}), 404
 
-        # 获取用户角色
-        user_roles = db.session.query(Role).join(UserRole).filter(UserRole.user_id == user.id).all()
-        roles = [role.name for role in user_roles]
+        role_code, role_name = _get_user_role(user.id)
 
-        return jsonify({
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'roles': roles,
-                'is_active': user.is_active,
-                'created_at': user.created_at.isoformat() if user.created_at else None
-            }
-        }), 200
-
-    except Exception as e:
-        current_app.logger.error(f'Get profile error: {str(e)}')
-        return jsonify({'error': '获取用户信息失败'}), 500
-
-
-@auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    """用户登出"""
-    try:
-        # 这里可以实现token黑名单功能
-        # 目前只返回成功消息
-        return jsonify({'message': '登出成功'}), 200
-
-    except Exception as e:
-        current_app.logger.error(f'Logout error: {str(e)}')
-        return jsonify({'error': '登出失败'}), 500
+        return (
+            jsonify(
+                {
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "name": user.name,
+                        "age": user.age,
+                        "gender": user.gender,
+                        "enable": user.enable,
+                        "role_code": role_code,
+                        "role_name": role_name,
+                        "created_time": user.created_time.isoformat()
+                        if user.created_time
+                        else None,
+                    }
+                }
+            ),
+            200,
+        )
+    except Exception:
+        current_app.logger.exception("Get profile error")
+        return jsonify({"error": "获取用户信息失败"}), 500
 
 
-@auth_bp.route('/change-password', methods=['POST'])
+# ---------- 修改密码 ----------
+@auth_bp.route("/change-password", methods=["POST"])
 @jwt_required()
 def change_password():
-    """修改密码"""
     try:
         user_id = get_jwt_identity()
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
+        old_pwd = data.get("old_password", "").strip()
+        new_pwd = data.get("new_password", "").strip()
 
-        if not data or not data.get('old_password') or not data.get('new_password'):
-            return jsonify({'error': '旧密码和新密码不能为空'}), 400
+        if not old_pwd or not new_pwd:
+            return jsonify({"error": "旧密码和新密码不能为空"}), 400
 
-        old_password = data['old_password']
-        new_password = data['new_password']
-
-        # 获取用户
         user = User.query.get(user_id)
         if not user:
-            return jsonify({'error': '用户不存在'}), 404
+            return jsonify({"error": "用户不存在"}), 404
 
-        # 验证旧密码
-        if not check_password_hash(user.password_hash, old_password):
-            return jsonify({'error': '旧密码错误'}), 400
+        if not check_password_hash(user.password, old_pwd):
+            return jsonify({"error": "旧密码错误"}), 400
 
-        # 更新密码
-        user.password_hash = generate_password_hash(new_password)
+        user.password = generate_password_hash(new_pwd)
         db.session.commit()
 
-        return jsonify({'message': '密码修改成功'}), 200
-
-    except Exception as e:
+        return jsonify({"message": "密码修改成功"}), 200
+    except Exception:
         db.session.rollback()
-        current_app.logger.error(f'Change password error: {str(e)}')
-        return jsonify({'error': '密码修改失败'}), 500
+        current_app.logger.exception("Change password error")
+        return jsonify({"error": "密码修改失败"}), 500
+
+
+# ---------- 登出 ----------
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    """
+    登出占位接口  
+    若后续实现 token 拉黑，可在此处插入黑名单逻辑。
+    """
+    return jsonify({"message": "登出成功"}), 200

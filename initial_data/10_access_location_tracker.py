@@ -1,4 +1,4 @@
-# initial_data/08_access_location_tracker.py
+# initial_data/10_access_location_tracker.py
 
 from modules.data_management.models import AccessLocationTracker
 from modules.auth.models import  User
@@ -42,8 +42,8 @@ def insert_data(db):
                     at_num_nd=10 + random.randint(0, 5), # 正常地点访问次数
                     at_num_ad=random.randint(0, 1),     # 异常地点访问次数
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 # 动态添加 IP 历史
                 for ip in normal_ips:
@@ -68,8 +68,8 @@ def insert_data(db):
                     at_num_nd=5 + random.randint(0, 3),
                     at_num_ad=0,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 for ip in normal_ips:
                     tracker.add_ip_to_history(ip)
@@ -90,8 +90,8 @@ def insert_data(db):
                     at_num_nd=15 + random.randint(0, 7),
                     at_num_ad=random.randint(0, 2),
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 for ip in normal_ips:
                     tracker.add_ip_to_history(ip)

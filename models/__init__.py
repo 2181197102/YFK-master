@@ -4,7 +4,7 @@
 SQLAlchemy 能发现这些类。
 """
 
-# from modules.auth.models import User, Role, UserRole
+# from modules.auth.models import User, Role, UserRoleRelation
 # from modules.data_management.models import (
 #     AccessSuccessTracker, OperationBehaviorTracker, DataSensitivityTracker,
 #     AccessTimeTracker, AccessLocationTracker
@@ -14,7 +14,7 @@ from modules.auth.models import *
 from modules.data_management.models import *
 
 __all__ = [
-    'User', 'Role', 'UserRole',
+    'User', 'Role', 'UserRoleRelation', 'Group', 'UserGroupRelation',
     'AccessSuccessTracker', 'OperationBehaviorTracker', 'DataSensitivityTracker',
     'AccessTimeTracker', 'AccessLocationTracker'
 ]

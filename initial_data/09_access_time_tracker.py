@@ -1,4 +1,4 @@
-# initial_data/07_access_time_tracker.py
+# initial_data/09_access_time_tracker.py
 
 from modules.data_management.models import AccessTimeTracker
 from modules.auth.models import  User
@@ -37,8 +37,8 @@ def insert_data(db):
                     ap_num_ni=20 + random.randint(0, 5), # 正常时间访问次数
                     ap_num_ui=random.randint(0, 2),     # 异常时间访问次数
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加管理员用户在 {record_date} 的访问时间追踪数据。")
@@ -57,8 +57,8 @@ def insert_data(db):
                     ap_num_ni=10 + random.randint(0, 3),
                     ap_num_ui=random.randint(0, 1),
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 patient_alice 用户在 {record_date} 的访问时间追踪数据。")
@@ -77,8 +77,8 @@ def insert_data(db):
                     ap_num_ni=25 + random.randint(0, 7),
                     ap_num_ui=random.randint(0, 3),
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 dr_smith 用户在 {record_date} 的访问时间追踪数据。")

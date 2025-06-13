@@ -1,4 +1,4 @@
-# initial_data/05_operation_behavior_tracker.py
+# initial_data/07_operation_behavior_tracker.py
 
 from modules.data_management.models import OperationBehaviorTracker
 from modules.auth.models import  User
@@ -41,8 +41,8 @@ def insert_data(db):
                     ob_num_delete=0,
                     # ob_a, ob_b, ob_c 保持默认值
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加管理员用户在 {record_date} 的操作行为追踪数据。")
@@ -65,8 +65,8 @@ def insert_data(db):
                     ob_num_revise=0,
                     ob_num_delete=0,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 patient_alice 用户在 {record_date} 的操作行为追踪数据。")
@@ -89,8 +89,8 @@ def insert_data(db):
                     ob_num_revise=3 + i,
                     ob_num_delete=0,
                     date_recorded=record_date,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_time=datetime.utcnow(),
+                    updated_time=datetime.utcnow()
                 )
                 db.session.add(new_tracker)
                 print(f"    已添加 dr_smith 用户在 {record_date} 的操作行为追踪数据。")

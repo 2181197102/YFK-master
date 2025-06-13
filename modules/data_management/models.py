@@ -17,8 +17,8 @@ class AccessSuccessTracker(db.Model):
     ast_num_as = db.Column(db.Integer, default=0, comment='访问成功次数')
     ast_num_af = db.Column(db.Integer, default=0, comment='访问失败次数')
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+    created_time = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
                            onupdate=datetime.utcnow)
 
     # 业务计算
@@ -52,8 +52,8 @@ class OperationBehaviorTracker(db.Model):
     ob_b = db.Column(db.Float, default=0.3)
     ob_c = db.Column(db.Float, default=0.4)
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at    = db.Column(db.DateTime, default=datetime.utcnow,
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
 
     def calculate_behavior_score(self):
@@ -91,8 +91,8 @@ class DataSensitivityTracker(db.Model):
     ds_c = db.Column(db.Float, default=1.0)
     ds_d = db.Column(db.Float, default=1.0)
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at    = db.Column(db.DateTime, default=datetime.utcnow,
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
 
     def calculate_sensitivity_score(self):
@@ -120,8 +120,8 @@ class AccessTimeTracker(db.Model):
     ap_num_ni = db.Column(db.Integer, default=0)
     ap_num_ui = db.Column(db.Integer, default=0)
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at    = db.Column(db.DateTime, default=datetime.utcnow,
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
 
     def calculate_normal_time_ratio(self):
@@ -149,8 +149,8 @@ class AccessLocationTracker(db.Model):
     last_ip   = db.Column(db.String(45))
     ip_history = db.Column(db.Text)           # JSON 字符串
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at    = db.Column(db.DateTime, default=datetime.utcnow,
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
 
     def calculate_normal_location_ratio(self):

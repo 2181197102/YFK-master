@@ -1,8 +1,9 @@
+# data_management/routes.py
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from modules.data_management.models import (db, AccessSuccessTracker, OperationBehaviorTracker,
                            DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker)
-from modules.auth.models import  User
+from modules.auth.models import User
 from modules.auth.decorators import role_required
 from datetime import datetime
 from sqlalchemy import func
@@ -28,11 +29,11 @@ def get_user_access_success(user_id):
         query = AccessSuccessTracker.query.filter_by(user_id=user_id)
 
         if start_date:
-            query = query.filter(AccessSuccessTracker.created_at >= datetime.fromisoformat(start_date))
+            query = query.filter(AccessSuccessTracker.created_time >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(AccessSuccessTracker.created_at <= datetime.fromisoformat(end_date))
+            query = query.filter(AccessSuccessTracker.created_time <= datetime.fromisoformat(end_date))
 
-        records = query.order_by(AccessSuccessTracker.created_at.desc()).all()
+        records = query.order_by(AccessSuccessTracker.created_time.desc()).all()
 
         for record in records:
             print(record.to_dict())
@@ -43,8 +44,8 @@ def get_user_access_success(user_id):
             'num_af': record.ast_num_af,
             'success_rate': record.ast_num_as / (record.ast_num_as + record.ast_num_af) if (
                                                                                                        record.ast_num_as + record.ast_num_af) > 0 else 0,
-            'created_at': record.created_at.isoformat(),
-            'updated_at': record.updated_at.isoformat() if record.updated_at else None
+            'created_time': record.created_time.isoformat(),
+            'updated_time': record.updated_time.isoformat() if record.updated_time else None
         } for record in records]
 
         return jsonify({'access_success_data': data}), 200
@@ -73,21 +74,21 @@ def update_access_success():
         today = datetime.utcnow().date()
         existing_record = AccessSuccessTracker.query.filter(
             AccessSuccessTracker.user_id == user_id,
-            func.date(AccessSuccessTracker.created_at) == today
+            func.date(AccessSuccessTracker.created_time) == today
         ).first()
 
         if existing_record:
             # 更新现有记录
-            existing_record.num_as += num_as
-            existing_record.num_af += num_af
-            existing_record.updated_at = datetime.utcnow()
+            existing_record.ast_num_as += num_as
+            existing_record.ast_num_af += num_af
+            existing_record.updated_time = datetime.utcnow()
         else:
             # 创建新记录
             record = AccessSuccessTracker(
                 id=str(uuid.uuid4()),
                 user_id=user_id,
-                num_as=num_as,
-                num_af=num_af
+                ast_num_as=num_as,
+                ast_num_af=num_af
             )
             db.session.add(record)
 
@@ -102,7 +103,7 @@ def update_access_success():
 
 @data_mgmt_bp.route('/operation-behavior/user/<user_id>', methods=['GET'])
 @jwt_required()
-@role_required(['管理员', '科研人员'])
+@role_required('管理员', '科研人员')
 def get_user_operation_behavior(user_id):
     """获取用户的操作行为数据"""
     try:
@@ -117,11 +118,11 @@ def get_user_operation_behavior(user_id):
         query = OperationBehaviorTracker.query.filter_by(user_id=user_id)
 
         if start_date:
-            query = query.filter(OperationBehaviorTracker.created_at >= datetime.fromisoformat(start_date))
+            query = query.filter(OperationBehaviorTracker.created_time >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(OperationBehaviorTracker.created_at <= datetime.fromisoformat(end_date))
+            query = query.filter(OperationBehaviorTracker.created_time <= datetime.fromisoformat(end_date))
 
-        records = query.order_by(OperationBehaviorTracker.created_at.desc()).all()
+        records = query.order_by(OperationBehaviorTracker.created_time.desc()).all()
 
         data = [{
             'id': record.id,
@@ -134,8 +135,8 @@ def get_user_operation_behavior(user_id):
             'ob_a': record.ob_a,
             'ob_b': record.ob_b,
             'ob_c': record.ob_c,
-            'created_at': record.created_at.isoformat(),
-            'updated_at': record.updated_at.isoformat() if record.updated_at else None
+            'created_time': record.created_time.isoformat(),
+            'updated_time': record.updated_time.isoformat() if record.updated_time else None
         } for record in records]
 
         return jsonify({'operation_behavior_data': data}), 200
@@ -162,7 +163,7 @@ def update_operation_behavior():
         today = datetime.utcnow().date()
         existing_record = OperationBehaviorTracker.query.filter(
             OperationBehaviorTracker.user_id == user_id,
-            func.date(OperationBehaviorTracker.created_at) == today
+            func.date(OperationBehaviorTracker.created_time) == today
         ).first()
 
         if existing_record:
@@ -173,7 +174,7 @@ def update_operation_behavior():
             existing_record.num_add += data.get('num_add', 0)
             existing_record.num_revise += data.get('num_revise', 0)
             existing_record.num_delete += data.get('num_delete', 0)
-            existing_record.updated_at = datetime.utcnow()
+            existing_record.updated_time = datetime.utcnow()
         else:
             # 创建新记录
             record = OperationBehaviorTracker(
@@ -202,7 +203,7 @@ def update_operation_behavior():
 
 @data_mgmt_bp.route('/data-sensitivity/user/<user_id>', methods=['GET'])
 @jwt_required()
-@role_required(['管理员', '科研人员'])
+@role_required('管理员', '科研人员')
 def get_user_data_sensitivity(user_id):
     """获取用户的数据敏感度数据"""
     try:
@@ -217,11 +218,11 @@ def get_user_data_sensitivity(user_id):
         query = DataSensitivityTracker.query.filter_by(user_id=user_id)
 
         if start_date:
-            query = query.filter(DataSensitivityTracker.created_at >= datetime.fromisoformat(start_date))
+            query = query.filter(DataSensitivityTracker.created_time >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(DataSensitivityTracker.created_at <= datetime.fromisoformat(end_date))
+            query = query.filter(DataSensitivityTracker.created_time <= datetime.fromisoformat(end_date))
 
-        records = query.order_by(DataSensitivityTracker.created_at.desc()).all()
+        records = query.order_by(DataSensitivityTracker.created_time.desc()).all()
 
         data = [{
             'id': record.id,
@@ -233,8 +234,8 @@ def get_user_data_sensitivity(user_id):
             'ds_b': record.ds_b,
             'ds_c': record.ds_c,
             'ds_d': record.ds_d,
-            'created_at': record.created_at.isoformat(),
-            'updated_at': record.updated_at.isoformat() if record.updated_at else None
+            'created_time': record.created_time.isoformat(),
+            'updated_time': record.updated_time.isoformat() if record.updated_time else None
         } for record in records]
 
         return jsonify({'data_sensitivity_data': data}), 200
@@ -261,7 +262,7 @@ def update_data_sensitivity():
         today = datetime.utcnow().date()
         existing_record = DataSensitivityTracker.query.filter(
             DataSensitivityTracker.user_id == user_id,
-            func.date(DataSensitivityTracker.created_at) == today
+            func.date(DataSensitivityTracker.created_time) == today
         ).first()
 
         if existing_record:
@@ -270,7 +271,7 @@ def update_data_sensitivity():
             existing_record.num2 += data.get('num2', 0)
             existing_record.num3 += data.get('num3', 0)
             existing_record.num4 += data.get('num4', 0)
-            existing_record.updated_at = datetime.utcnow()
+            existing_record.updated_time = datetime.utcnow()
         else:
             # 创建新记录
             record = DataSensitivityTracker(
@@ -298,7 +299,7 @@ def update_data_sensitivity():
 
 @data_mgmt_bp.route('/access-period/user/<user_id>', methods=['GET'])
 @jwt_required()
-@role_required(['管理员', '科研人员'])
+@role_required('管理员', '科研人员')
 def get_user_access_period(user_id):
     """获取用户的访问时间数据"""
     try:
@@ -313,18 +314,18 @@ def get_user_access_period(user_id):
         query = AccessTimeTracker.query.filter_by(user_id=user_id)
 
         if start_date:
-            query = query.filter(AccessTimeTracker.created_at >= datetime.fromisoformat(start_date))
+            query = query.filter(AccessTimeTracker.created_time >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(AccessTimeTracker.created_at <= datetime.fromisoformat(end_date))
+            query = query.filter(AccessTimeTracker.created_time <= datetime.fromisoformat(end_date))
 
-        records = query.order_by(AccessTimeTracker.created_at.desc()).all()
+        records = query.order_by(AccessTimeTracker.created_time.desc()).all()
 
         data = [{
             'id': record.id,
             'num_ni': record.num_ni,
             'num_ui': record.num_ui,
-            'created_at': record.created_at.isoformat(),
-            'updated_at': record.updated_at.isoformat() if record.updated_at else None
+            'created_time': record.created_time.isoformat(),
+            'updated_time': record.updated_time.isoformat() if record.updated_time else None
         } for record in records]
 
         return jsonify({'access_period_data': data}), 200
@@ -350,13 +351,13 @@ def update_access_period():
         today = datetime.utcnow().date()
         existing_record = AccessTimeTracker.query.filter(
             AccessTimeTracker.user_id == user_id,
-            func.date(AccessTimeTracker.created_at) == today
+            func.date(AccessTimeTracker.created_time) == today
         ).first()
 
         if existing_record:
             existing_record.num_ni += data.get('num_ni', 0)
             existing_record.num_ui += data.get('num_ui', 0)
-            existing_record.updated_at = datetime.utcnow()
+            existing_record.updated_time = datetime.utcnow()
         else:
             record = AccessTimeTracker(
                 id=str(uuid.uuid4()),
@@ -377,7 +378,7 @@ def update_access_period():
 
 @data_mgmt_bp.route('/access-location/user/<user_id>', methods=['GET'])
 @jwt_required()
-@role_required(['管理员', '科研人员'])
+@role_required('管理员', '科研人员')
 def get_user_access_location(user_id):
     """获取用户的访问IP数据"""
     try:
@@ -391,18 +392,18 @@ def get_user_access_location(user_id):
         query = AccessLocationTracker.query.filter_by(user_id=user_id)
 
         if start_date:
-            query = query.filter(AccessLocationTracker.created_at >= datetime.fromisoformat(start_date))
+            query = query.filter(AccessLocationTracker.created_time >= datetime.fromisoformat(start_date))
         if end_date:
-            query = query.filter(AccessLocationTracker.created_at <= datetime.fromisoformat(end_date))
+            query = query.filter(AccessLocationTracker.created_time <= datetime.fromisoformat(end_date))
 
-        records = query.order_by(AccessLocationTracker.created_at.desc()).all()
+        records = query.order_by(AccessLocationTracker.created_time.desc()).all()
 
         data = [{
             'id': record.id,
             'num_nd': record.num_nd,
             'num_ad': record.num_ad,
-            'created_at': record.created_at.isoformat(),
-            'updated_at': record.updated_at.isoformat() if record.updated_at else None
+            'created_time': record.created_time.isoformat(),
+            'updated_time': record.updated_time.isoformat() if record.updated_time else None
         } for record in records]
 
         return jsonify({'access_location_data': data}), 200
@@ -428,13 +429,13 @@ def update_access_location():
         today = datetime.utcnow().date()
         existing_record = AccessLocationTracker.query.filter(
             AccessLocationTracker.user_id == user_id,
-            func.date(AccessLocationTracker.created_at) == today
+            func.date(AccessLocationTracker.created_time) == today
         ).first()
 
         if existing_record:
             existing_record.num_nd += data.get('num_nd', 0)
             existing_record.num_ad += data.get('num_ad', 0)
-            existing_record.updated_at = datetime.utcnow()
+            existing_record.updated_time = datetime.utcnow()
         else:
             record = AccessLocationTracker(
                 id=str(uuid.uuid4()),
