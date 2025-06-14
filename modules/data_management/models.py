@@ -177,3 +177,69 @@ class AccessLocationTracker(db.Model):
             'last_ip': self.last_ip,
             'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }
+
+# ------------------- ICD‑10 码表 -------------------
+class ICD10Code(db.Model):
+    """
+    国际疾病分类第十版（ICD‑10）编码模型
+    """
+    __tablename__ = 'icd10_codes'
+    __table_args__ = (
+        db.UniqueConstraint('code', name='uq_icd10_code'),
+        db.Index('idx_icd10_chapter', 'chapter'),
+        db.Index('idx_icd10_description', 'description')
+    )
+
+    # 通用主键
+    id = db.Column(db.Integer, primary_key=True)
+
+    # ICD‑10 结构化字段
+    chapter        = db.Column(db.String(7),  nullable=False, comment='章/类别，如 A00')
+    subcategory    = db.Column(db.String(7),  nullable=True, comment='细分类，如 0、1、9')
+    code           = db.Column(db.String(10),  nullable=False, comment='完整编码，如 A000')
+    description    = db.Column(db.String(512), nullable=False, comment='官方长描述')
+    alt_desc       = db.Column(db.String(512), nullable=True,  comment='备用长描述（如果有）')
+    short_desc     = db.Column(db.String(256), nullable=True,  comment='简短描述 / 疾病名称')
+
+    # 统一的审计字段
+    created_time   = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time   = db.Column(db.DateTime, default=datetime.utcnow,
+                               onupdate=datetime.utcnow)
+
+    # ---------- 工具方法 ----------
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "chapter": self.chapter,
+            "subcategory": self.subcategory,
+            "code": self.code,
+            "description": self.description,
+            "alt_desc": self.alt_desc,
+            "short_desc": self.short_desc,
+        }
+
+    @staticmethod
+    def search_by_code(keyword: str, limit: int = 10):
+        """
+        按完整编码或编码前缀模糊查询
+        """
+        return (ICD10Code.query
+                .filter(ICD10Code.code.ilike(f"{keyword}%"))
+                .limit(limit)
+                .all())
+
+    @staticmethod
+    def search_by_text(keyword: str, limit: int = 10):
+        """
+        按中文/英文描述关键字模糊查询
+        """
+        pattern = f"%{keyword}%"
+        return (ICD10Code.query
+                .filter(db.or_(ICD10Code.description.ilike(pattern),
+                               ICD10Code.alt_desc.ilike(pattern),
+                               ICD10Code.short_desc.ilike(pattern)))
+                .limit(limit)
+                .all())
+
+    def __repr__(self):
+        return f"<ICD10Code {self.code} – {self.short_desc or self.description[:30]}>"
