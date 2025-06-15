@@ -130,6 +130,12 @@ def register():
         if User.query.filter_by(username=username).first():
             return jsonify({"error": "用户名已存在"}), 400
 
+        # --- 新增：阻止注册管理员 ---
+        admin_aliases = {"ADMIN", "管理员"}
+        if role_input.upper() in admin_aliases or role_input in admin_aliases:
+            return jsonify({"error": "禁止注册管理员账号"}), 400
+        # --------------------------------
+
         # 查找角色（兼容 role_code 或 role_name）
         role = Role.query.filter(
             (Role.role_code == role_input) | (Role.role_name == role_input)
