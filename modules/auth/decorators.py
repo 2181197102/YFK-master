@@ -1,6 +1,12 @@
+# modules/auth/routes.py
 from functools import wraps
-from flask import jsonify, current_app
+from flask import current_app
 from flask_jwt_extended import jwt_required, get_jwt
+
+from utils.response import (
+    forbidden_response,
+    server_error_response,
+)
 
 # ---- 角色常量（角色代码）----
 ADMIN = "ADMIN"
@@ -22,7 +28,9 @@ RESEARCHER_OR_ADMIN_ROLES = {RESEARCHER, ADMIN}
 
 
 def role_required(*allowed_roles: str):
-    """通用角色权限装饰器，只识别 JWT.claims 中的 'role' 字符串"""
+    """
+    通用角色权限装饰器，只识别 JWT.claims 中的 'role_code' 字符串
+    """
     allowed_set = set(allowed_roles)
 
     def decorator(fn):
@@ -30,17 +38,20 @@ def role_required(*allowed_roles: str):
         @jwt_required()
         def wrapper(*args, **kwargs):
             try:
-                role = get_jwt().get("role_code", None)
-                current_app.logger.debug(f"访问者角色: {role}, 允许角色: {allowed_set}")
+                role = get_jwt().get("role_code")
+                current_app.logger.debug(
+                    f"访问者角色: {role}, 允许角色: {allowed_set}"
+                )
 
-                if not role or role not in allowed_set:
-                    return jsonify({"error": "权限不足"}), 403
+                if role not in allowed_set:
+                    # 权限不足
+                    return forbidden_response("权限不足")
 
                 return fn(*args, **kwargs)
 
-            except Exception:
+            except Exception:  # pragma: no cover
                 current_app.logger.exception("权限验证失败")
-                return jsonify({"error": "权限验证失败"}), 500
+                return server_error_response("权限验证失败")
 
         return wrapper
 
@@ -48,15 +59,17 @@ def role_required(*allowed_roles: str):
 
 
 # ---- 语义化装饰器 ----
-
 def admin_required(fn):
     return role_required(ADMIN)(fn)
+
 
 def doctor_only(fn):
     return role_required(*DOCTOR_ROLES)(fn)
 
+
 def patient_or_doctor(fn):
     return role_required(*PATIENT_OR_DOCTOR_ROLES)(fn)
+
 
 def researcher_or_admin(fn):
     return role_required(*RESEARCHER_OR_ADMIN_ROLES)(fn)

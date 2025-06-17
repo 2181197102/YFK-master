@@ -25,6 +25,7 @@ YFK-master/
 │	│   ├── routes.py              # 数据管理服务
 │	│   └── models.py              # 数据管理的模型
 ├── utils/
+│   ├── response.py			  # 统一封装请求返回内容
 │   └── extensions.py          # 存放各种扩展（如 db, jwt）的实例
 └── venv/
 ```
@@ -125,16 +126,21 @@ key：application/json
 
 ```
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc0OTgzNzYzMiwianRpIjoiOWU3YzQ0ZmQtMjhmYy00NTBjLWIwMDctYmZkNzE4ZTAzMjViIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NDk4Mzc2MzIsImV4cCI6MTc0OTkyNDAzMiwidXNlcl9pZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGVfY29kZSI6IkFETUlOIiwiZ3JvdXBfbmFtZSI6Ilx1N2JhMVx1NzQwNlx1NTQ1OFx1NmQ0Ylx1OGJkNVx1NTMzYlx1OTY2MiJ9.PFfQjJMaA31xRk-9YOX1wF_koic3BMU74DE9bj7O3-A",
-  "user": {
-    "age": 30,
-    "gender": "M",
-    "group_name": "管理员测试医院",
-    "id": 1,
-    "name": "系统管理员",
-    "role_code": "ADMIN",
-    "role_name": "管理员",
-    "username": "admin"
-  }
+  "code": 200,
+  "message": "登录成功",
+  "result": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc1MDE0Nzk3NiwianRpIjoiNTRlYWNhNTEtODAwMC00YmY3LWFkOTEtZDIwNWM2MTRiODY3IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEiLCJuYmYiOjE3NTAxNDc5NzYsImV4cCI6MTc1MDIzNDM3NiwidXNlcl9pZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGVfY29kZSI6IkFETUlOIiwiZ3JvdXBfbmFtZSI6Ilx1N2JhMVx1NzQwNlx1NTQ1OFx1NmQ0Ylx1OGJkNVx1NTMzYlx1OTY2MiJ9.ws8Klkk24ja-8MZ5fYnTYdw0xTGkxnntvTvu_h21I-E",
+    "user": {
+      "age": 30,
+      "gender": "M",
+      "group_name": "管理员测试医院",
+      "id": 1,
+      "name": "系统管理员",
+      "role_code": "ADMIN",
+      "role_name": "管理员",
+      "username": "admin"
+    }
+  },
+  "status": "ok"
 }
 ```

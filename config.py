@@ -42,7 +42,12 @@ class Config:
     APP_PORT = int(os.environ.get('APP_PORT', 7878))
 
     # CORS配置
-    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+    CORS_ORIGINS = [
+        'http://localhost:3000',
+        'https://localhost:3000',  # 添加这一项
+        'http://127.0.0.1:3000',
+        'https://127.0.0.1:3000'  # 也可以加上保险
+    ]
 
     # RBAC角色配置
     ROLES = {
