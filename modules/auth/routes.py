@@ -176,6 +176,7 @@ def login():
                 "role_code": role_code,
                 "role_name": role_name,
                 "group_name": group_name,
+                "created_time": user.created_time.isoformat()
             },
         }
         return success_response(result, "登录成功")
