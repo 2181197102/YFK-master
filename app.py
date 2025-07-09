@@ -37,7 +37,7 @@ def create_app(config_name=None):
     from modules.audit.routes import audit_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(user_mgmt_bp, url_prefix='/api/users')
+    app.register_blueprint(user_mgmt_bp, url_prefix='/api/user_management')
     app.register_blueprint(data_mgmt_bp, url_prefix='/api/data_management')
     app.register_blueprint(audit_bp, url_prefix='/api/audit')
 
@@ -64,7 +64,7 @@ def create_app(config_name=None):
 
     @app.errorhandler(500)
     def internal_error(error):
-        return server_error_response("服务器内部错误")
+        return server_error_response(error)
 
     # 处理其他异常
     @app.errorhandler(Exception)

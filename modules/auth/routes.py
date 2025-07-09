@@ -35,7 +35,7 @@ from utils.response import (
     server_error_response,
 )
 
-from modules.auth.models import User, Role, UserRoleRelation
+from modules.auth.models import User, Role, UserRoleRelation, Group, UserGroupRelation
 
 # ────────────────────────────── Blueprint ──────────────────────────────
 auth_bp = Blueprint("auth", __name__)
@@ -263,13 +263,13 @@ def login():
 def register():
     """
     用户注册
-    前端需提交：username / password / name / age / gender / role
+    前端需提交：username / password / name / age / gender / role / group
     其中 role 可填角色代码 (PATIENT 等) 或角色名称 (患者 等)。
     """
     try:
         data = request.get_json(silent=True) or {}
 
-        required = ["username", "password", "name", "age", "gender", "role"]
+        required = ["username", "password", "name", "age", "gender", "role", "group"]
         missing = [f for f in required if not data.get(f)]
         if missing:
             return error_response(f"字段缺失: {', '.join(missing)}", 400)
@@ -280,6 +280,7 @@ def register():
         age = int(data["age"])
         gender = data["gender"].strip()
         role_input = data["role"].strip()  # 可能是中文或代码
+        group_input = data["group"].strip()
 
         if User.query.filter_by(username=username).first():
             return error_response("用户名已存在", 400)
@@ -296,6 +297,13 @@ def register():
         if not role:
             return error_response("无效的角色", 400)
 
+        # 查找组
+        group = Group.query.filter(
+            (Group.group_name == group_input)
+        ).first()
+        if not group:
+            return error_response("无效的组", 400)
+
         # 创建用户
         user = User(
             username=username,
@@ -311,6 +319,9 @@ def register():
         # 绑定唯一角色
         rel = UserRoleRelation(user_id=user.id, role_id=role.id)
         db.session.add(rel)
+        # 绑定用户组
+        group_rel = UserGroupRelation(user_id=user.id, group_id=group.id)
+        db.session.add(group_rel)
 
         db.session.commit()
 
@@ -335,6 +346,7 @@ def get_profile():
             return not_found_response("用户不存在")
 
         role_code, role_name = _get_user_role(user.id)
+        group_name = _get_user_group(user.id)
 
         result = {
             "user": {
@@ -346,6 +358,7 @@ def get_profile():
                 "enable": user.enable,
                 "role_code": role_code,
                 "role_name": role_name,
+                "group_name": group_name,
                 "created_time": user.created_time.isoformat()
                 if user.created_time
                 else None,
@@ -391,7 +404,7 @@ def change_password():
 
 # ────────────────────────────── 登出 ──────────────────────────────
 @auth_bp.route("/logout", methods=["POST"])
-@jwt_required()
+# @jwt_required()
 def logout():
     """
     占位登出接口

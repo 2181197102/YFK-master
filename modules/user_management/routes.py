@@ -2,6 +2,7 @@
 from datetime import datetime
 
 from flask import Blueprint, request, current_app
+from flask_jwt_extended import jwt_required
 from werkzeug.security import generate_password_hash
 
 from modules.auth.models import (
@@ -25,7 +26,7 @@ user_mgmt_bp = Blueprint("user_management", __name__)
 
 # ─────────────────────────── 用户列表 ───────────────────────────
 @user_mgmt_bp.route("/users", methods=["GET"])
-@admin_required
+# @admin_required
 def get_users():
     try:
         page = request.args.get("page", 1, type=int)
@@ -316,9 +317,11 @@ def delete_user(user_id):
 
 # ======================= 角色管理 =======================
 @user_mgmt_bp.route("/roles", methods=["GET"])
-@admin_required
+# @admin_required
+# @jwt_required()
 def get_roles():
     try:
+        print("1")
         roles = Role.query.all()
         return success_response({"roles": [r.to_dict() for r in roles]})
     except Exception:
@@ -413,21 +416,15 @@ def delete_role(role_id):
 
 # ======================= 组管理 =======================
 @user_mgmt_bp.route("/groups", methods=["GET"])
-@admin_required
+# @admin_required
+# @jwt_required()
 def get_groups():
     try:
-        page = request.args.get("page", 1, type=int)
-        per_page = request.args.get("per_page", 10, type=int)
-        search = request.args.get("search")
-
-        query = Group.query
-        if search:
-            query = query.filter(Group.group_name.contains(search))
-
-        groups = query.paginate(page=page, per_page=per_page, error_out=False)
+        # 直接获取所有组
+        groups = Group.query.all()
 
         groups_list = []
-        for g in groups.items:
+        for g in groups:
             g_dict = g.to_dict()
             g_dict["user_count"] = UserGroupRelation.query.filter_by(
                 group_id=g.id, enable=True
@@ -435,21 +432,53 @@ def get_groups():
             groups_list.append(g_dict)
 
         result = {
-            "groups": groups_list,
-            "pagination": {
-                "page": page,
-                "per_page": per_page,
-                "total": groups.total,
-                "pages": groups.pages,
-                "has_next": groups.has_next,
-                "has_prev": groups.has_prev,
-            },
+            "groups": groups_list
         }
+
         return success_response(result)
 
     except Exception:
         current_app.logger.exception("Get groups error")
         return server_error_response("获取组列表失败")
+# @user_mgmt_bp.route("/groups", methods=["GET"])
+# # @admin_required
+# # @jwt_required()
+# def get_groups():
+#     try:
+#         page = request.args.get("page", 1, type=int)
+#         per_page = request.args.get("per_page", 10, type=int)
+#         search = request.args.get("search")
+#
+#         query = Group.query
+#         if search:
+#             query = query.filter(Group.group_name.contains(search))
+#
+#         groups = query.paginate(page=page, per_page=per_page, error_out=False)
+#
+#         groups_list = []
+#         for g in groups.items:
+#             g_dict = g.to_dict()
+#             g_dict["user_count"] = UserGroupRelation.query.filter_by(
+#                 group_id=g.id, enable=True
+#             ).count()
+#             groups_list.append(g_dict)
+#
+#         result = {
+#             "groups": groups_list,
+#             "pagination": {
+#                 "page": page,
+#                 "per_page": per_page,
+#                 "total": groups.total,
+#                 "pages": groups.pages,
+#                 "has_next": groups.has_next,
+#                 "has_prev": groups.has_prev,
+#             },
+#         }
+#         return success_response(result)
+#
+#     except Exception:
+#         current_app.logger.exception("Get groups error")
+#         return server_error_response("获取组列表失败")
 
 
 @user_mgmt_bp.route("/groups", methods=["POST"])
