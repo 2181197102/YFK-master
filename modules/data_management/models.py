@@ -144,8 +144,8 @@ class AccessLocationTracker(db.Model):
 
     id      = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    at_num_nd = db.Column(db.Integer, default=0)
-    at_num_ad = db.Column(db.Integer, default=0)
+    at_num_nd = db.Column(db.Integer, default=0) # 正常地点访问次数
+    at_num_ad = db.Column(db.Integer, default=0) # 异常地点访问次数
     last_ip   = db.Column(db.String(45))
     ip_history = db.Column(db.Text)           # JSON 字符串
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())

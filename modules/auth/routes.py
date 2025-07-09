@@ -11,9 +11,10 @@
     - Group              (医院/机构)
     - UserGroupRelation  (一对一；可选)
 """
-
-from datetime import timedelta
+# ────────────────────────────── 导入依赖 ──────────────────────────────
+from datetime import timedelta, datetime
 from functools import wraps
+import json
 
 from flask import Blueprint, current_app, request
 from flask_jwt_extended import (
@@ -128,11 +129,66 @@ def _get_user_group(user_id: int):
     group = Group.query.get(rel.group_id)
     return group.group_name if group else None
 
+# ────────────────────────────── 获取客户端IP辅助函数 ──────────────────────────────
+def get_client_ip():
+    """获取客户端真实IP地址，并打印所有相关字段"""
+    x_forwarded_for = request.headers.get('X-Forwarded-For', '')
+    x_real_ip = request.headers.get('X-Real-IP', '')
+    remote_addr = request.remote_addr
+
+    # print("X-Forwarded-For:", x_forwarded_for)
+    # print("X-Real-IP:", x_real_ip)
+    # print("remote_addr:", remote_addr)
+
+    # 返回逻辑仍按优先级取最可信的
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    elif x_real_ip:
+        return x_real_ip
+    else:
+        return remote_addr
+
+
+def _update_access_location_tracker(user_id, current_ip):
+    """更新用户访问IP追踪记录"""
+    from modules.data_management.models import AccessLocationTracker
+    import json
+
+    # 查找或创建今天的记录
+    today = datetime.utcnow().date()
+    record = AccessLocationTracker.query.filter(
+        AccessLocationTracker.user_id == user_id,
+        AccessLocationTracker.date_recorded == today
+    ).first()
+
+    if not record:
+        # 创建新记录
+        record = AccessLocationTracker(
+            user_id=user_id,
+            at_num_nd=0,
+            at_num_ad=0,
+            date_recorded=today
+        )
+        db.session.add(record)
+        db.session.flush()
+
+    # 获取上次登录IP
+    last_ip = record.last_ip
+
+    # 更新IP历史记录
+    record.add_ip_to_history(current_ip)
+
+    # TODO: 这里可以根据业务逻辑判断是否为异常地点
+    # 暂时默认为正常地点登录
+    record.at_num_nd += 1
+
+    return last_ip
+
 
 # ────────────────────────────── 登录 ──────────────────────────────
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """用户登录，成功后签发 24 h JWT"""
+    """用户登录，成功后签发 24 h JWT"""
     try:
         data = request.get_json(silent=True) or {}
         username = data.get("username", "").strip()
@@ -165,23 +221,39 @@ def login():
             additional_claims=additional_claims,
         )
 
+        # 获取客户端IP地址
+        current_ip = get_client_ip()
+
+        # 更新IP追踪记录并获取上次登录IP
+        last_ip = _update_access_location_tracker(user.id, current_ip)
+
+        # 记录登录日志
+        if last_ip:
+            current_app.logger.info(
+                "用户 %s 登录成功，当前IP: %s，上次登录IP: %s",
+                username, current_ip, last_ip
+            )
+        else:
+            current_app.logger.info(
+                "用户 %s 首次登录，当前IP: %s",
+                username, current_ip
+            )
+
+        # 提交数据库更改
+        db.session.commit()
+
         result = {
             "access_token": access_token,
             "user": {
-                "id": user.id,
                 "username": user.username,
-                "name": user.name,
-                "age": user.age,
-                "gender": user.gender,
-                "role_code": role_code,
-                "role_name": role_name,
-                "group_name": group_name,
-                "created_time": user.created_time.isoformat()
+                "current_login_ip": current_ip,
+                "last_login_ip": last_ip,
             },
         }
         return success_response(result, "登录成功")
 
     except Exception:  # pragma: no cover
+        db.session.rollback()
         current_app.logger.exception("Login error")
         return server_error_response("登录失败")
 
