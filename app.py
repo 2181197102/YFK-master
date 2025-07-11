@@ -35,11 +35,13 @@ def create_app(config_name=None):
     from modules.user_management.routes import user_mgmt_bp
     from modules.data_management.routes import data_mgmt_bp
     from modules.audit.routes import audit_bp
+    from modules.system_config.routes import sys_cfg_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_mgmt_bp, url_prefix='/api/user_management')
     app.register_blueprint(data_mgmt_bp, url_prefix='/api/data_management')
     app.register_blueprint(audit_bp, url_prefix='/api/audit')
+    app.register_blueprint(sys_cfg_bp, url_prefix='/api/system_config')
 
     # 统一错误处理
     @app.errorhandler(400)

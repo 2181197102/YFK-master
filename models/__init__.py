@@ -12,9 +12,10 @@ SQLAlchemy 能发现这些类。
 
 from modules.auth.models import *
 from modules.data_management.models import *
+from modules.system_config.models import *
 
 __all__ = [
     'User', 'Role', 'UserRoleRelation', 'Group', 'UserGroupRelation',
     'AccessSuccessTracker', 'OperationBehaviorTracker', 'DataSensitivityTracker',
-    'AccessTimeTracker', 'AccessLocationTracker'
+    'AccessTimeTracker', 'AccessLocationTracker', 'SystemConfig'
 ]
