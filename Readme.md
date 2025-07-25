@@ -144,3 +144,9 @@ key：application/json
   "status": "ok"
 }
 ```
+
+
+
+## 技术文档
+
+参考：https://zread.ai/2181197102/YFK-master
