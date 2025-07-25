@@ -26,7 +26,7 @@ user_mgmt_bp = Blueprint("user_management", __name__)
 
 # ─────────────────────────── 用户列表 ───────────────────────────
 @user_mgmt_bp.route("/users", methods=["GET"])
-# @admin_required
+@admin_required
 def get_users():
     try:
         page = request.args.get("page", 1, type=int)
