@@ -10,10 +10,10 @@ import json
 
 # ------------------- 访问成功率追踪 -------------------
 class AccessSuccessTracker(db.Model):
-    __tablename__ = 'access_success_tracker'
+    __tablename__ = 'sys_access_success_tracker'
 
     id         = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ast_num_as = db.Column(db.Integer, default=0, comment='访问成功次数')
     ast_num_af = db.Column(db.Integer, default=0, comment='访问失败次数')
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
@@ -38,10 +38,10 @@ class AccessSuccessTracker(db.Model):
 
 # ------------------- 操作行为追踪 -------------------
 class OperationBehaviorTracker(db.Model):
-    __tablename__ = 'operation_behavior_tracker'
+    __tablename__ = 'sys_operation_behavior_tracker'
 
     id         = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ob_num_view      = db.Column(db.Integer, default=0)
     ob_num_copy      = db.Column(db.Integer, default=0)
     ob_num_download  = db.Column(db.Integer, default=0)
@@ -78,10 +78,10 @@ class OperationBehaviorTracker(db.Model):
 
 # ------------------- 数据敏感度追踪 -------------------
 class DataSensitivityTracker(db.Model):
-    __tablename__ = 'data_sensitivity_tracker'
+    __tablename__ = 'sys_data_sensitivity_tracker'
 
     id      = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ds_num1 = db.Column(db.Integer, default=0)
     ds_num2 = db.Column(db.Integer, default=0)
     ds_num3 = db.Column(db.Integer, default=0)
@@ -113,10 +113,10 @@ class DataSensitivityTracker(db.Model):
 
 # ------------------- 访问时间追踪 -------------------
 class AccessTimeTracker(db.Model):
-    __tablename__ = 'access_time_tracker'
+    __tablename__ = 'sys_access_time_tracker'
 
     id      = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ap_num_ni = db.Column(db.Integer, default=0)
     ap_num_ui = db.Column(db.Integer, default=0)
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
@@ -140,10 +140,10 @@ class AccessTimeTracker(db.Model):
 
 # ------------------- 访问地点/IP 追踪 -------------------
 class AccessLocationTracker(db.Model):
-    __tablename__ = 'access_location_tracker'
+    __tablename__ = 'sys_access_location_tracker'
 
     id      = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     at_num_nd = db.Column(db.Integer, default=0) # 正常地点访问次数
     at_num_ad = db.Column(db.Integer, default=0) # 异常地点访问次数
     last_ip   = db.Column(db.String(45))
@@ -183,7 +183,7 @@ class ICD10Code(db.Model):
     """
     国际疾病分类第十版（ICD‑10）编码模型
     """
-    __tablename__ = 'icd10_codes'
+    __tablename__ = 'sys_icd10_codes'
     __table_args__ = (
         db.UniqueConstraint('code', name='uq_icd10_code'),
         db.Index('idx_icd10_chapter', 'chapter'),

@@ -8,7 +8,7 @@ class SystemConfig(db.Model):
     用于保存系统级常量 / 配置项。
     建议以『键值对』形式设计，并区分是否敏感、是否只读等属性。
     """
-    __tablename__ = "system_configs"
+    __tablename__ = "sys_system_configs"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
