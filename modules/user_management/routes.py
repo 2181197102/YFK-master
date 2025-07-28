@@ -321,7 +321,6 @@ def delete_user(user_id):
 # @jwt_required()
 def get_roles():
     try:
-        print("1")
         roles = Role.query.all()
         return success_response({"roles": [r.to_dict() for r in roles]})
     except Exception:
