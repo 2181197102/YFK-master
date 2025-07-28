@@ -188,20 +188,24 @@ def _update_access_location_tracker(user_id, current_ip):
 # ────────────────────────────── 登录 ──────────────────────────────
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """用户登录，成功后签发 24 h JWT"""
+    """用户登录，支持用户名或身份证号登录，成功后签发 24 h JWT"""
     try:
         data = request.get_json(silent=True) or {}
-        username = data.get("username", "").strip()
+        account = data.get("account", "").strip()  # 改为通用的 account 字段
         password = data.get("password", "").strip()
 
-        current_app.logger.info("用户 %s 尝试登录", username)
+        current_app.logger.info("账号 %s 尝试登录", account)
 
-        if not username or not password:
-            return error_response("用户名和密码不能为空", 400)
+        if not account or not password:
+            return error_response("账号和密码不能为空", 400)
 
-        user = User.query.filter_by(username=username).first()
+        # 支持用户名或身份证号登录
+        user = User.query.filter(
+            (User.username == account) | (User.id_card == account)
+        ).first()
+
         if not user or not check_password_hash(user.password, password):
-            return unauthorized_response("用户名或密码错误")
+            return unauthorized_response("账号或密码错误")
 
         if not user.enable:
             return forbidden_response("用户已被禁用")
@@ -231,12 +235,12 @@ def login():
         if last_ip:
             current_app.logger.info(
                 "用户 %s 登录成功，当前IP: %s，上次登录IP: %s",
-                username, current_ip, last_ip
+                user.username, current_ip, last_ip
             )
         else:
             current_app.logger.info(
                 "用户 %s 首次登录，当前IP: %s",
-                username, current_ip
+                user.username, current_ip
             )
 
         # 提交数据库更改
@@ -263,13 +267,13 @@ def login():
 def register():
     """
     用户注册
-    前端需提交：username / password / name / age / gender / role / group
+    前端需提交：username / password / name / age / gender / id_card / phone / role / group
     其中 role 可填角色代码 (PATIENT 等) 或角色名称 (患者 等)。
     """
     try:
         data = request.get_json(silent=True) or {}
 
-        required = ["username", "password", "name", "age", "gender", "role", "group"]
+        required = ["username", "password", "name", "age", "gender", "id_card", "phone", "role", "group"]
         missing = [f for f in required if not data.get(f)]
         if missing:
             return error_response(f"字段缺失: {', '.join(missing)}", 400)
@@ -279,11 +283,18 @@ def register():
         name = data["name"].strip()
         age = int(data["age"])
         gender = data["gender"].strip()
+        id_card = data["id_card"].strip()
+        phone = data["phone"].strip()
         role_input = data["role"].strip()  # 可能是中文或代码
         group_input = data["group"].strip()
 
+        # 检查用户名是否已存在
         if User.query.filter_by(username=username).first():
             return error_response("用户名已存在", 400)
+
+        # 检查身份证号是否已存在
+        if User.query.filter_by(id_card=id_card).first():
+            return error_response("身份证号已存在", 400)
 
         # 禁止注册管理员
         admin_aliases = {"ADMIN", "管理员"}
@@ -310,6 +321,8 @@ def register():
             name=name,
             age=age,
             gender=gender,
+            id_card=id_card,
+            phone=phone,
             enable=True,
         )
         user.password = generate_password_hash(password)
@@ -355,6 +368,8 @@ def get_profile():
                 "name": user.name,
                 "age": user.age,
                 "gender": user.gender,
+                "id_card": user.id_card,
+                "phone": user.phone,
                 "enable": user.enable,
                 "role_code": role_code,
                 "role_name": role_name,
