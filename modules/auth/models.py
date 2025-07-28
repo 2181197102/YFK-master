@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # ----------------------- 用户表 -----------------------
 class User(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'sys_users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -14,6 +14,8 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)  # 姓名字段
     age = db.Column(db.Integer, nullable=False)  # 年龄字段
     gender = db.Column(db.String(10), nullable=False)  # 性别字段
+    id_card = db.Column(db.String(18), unique=True, nullable=False)  # 身份证号码，作为唯一标识
+    phone = db.Column(db.String(11), nullable=False)  # 手机号码
     enable = db.Column(db.Boolean, default=True, nullable=False)  # 是否可用，1可用；0冻结
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow,
@@ -62,6 +64,8 @@ class User(db.Model):
             'name': self.name,
             'age': self.age,
             'gender': self.gender,
+            'id_card': self.id_card,
+            'phone': self.phone,
             'enable': self.enable,
             'created_time': self.created_time.isoformat() if self.created_time else None,
             'updated_time': self.updated_time.isoformat() if self.updated_time else None
@@ -70,7 +74,7 @@ class User(db.Model):
 
 # ----------------------- 角色表 -----------------------
 class Role(db.Model):
-    __tablename__ = 'roles'
+    __tablename__ = 'sys_roles'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     role_code = db.Column(db.String(50), unique=True, nullable=False)  # 角色code
@@ -98,11 +102,11 @@ class Role(db.Model):
 
 # ----------------------- 用户-角色关系表 -----------------------
 class UserRoleRelation(db.Model):
-    __tablename__ = 'user_role_relation'
+    __tablename__ = 'sys_user_role_relation'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('sys_roles.id'), nullable=False)
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow,
                              onupdate=datetime.utcnow, nullable=False)
@@ -119,7 +123,7 @@ class UserRoleRelation(db.Model):
 
 # ----------------------- 组表 -----------------------
 class Group(db.Model):
-    __tablename__ = 'group'
+    __tablename__ = 'sys_group'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     group_name = db.Column(db.String(100), nullable=False)  # 组名称（医院名称）
@@ -145,11 +149,11 @@ class Group(db.Model):
 
 # ----------------------- 用户-组关系表 -----------------------
 class UserGroupRelation(db.Model):
-    __tablename__ = 'user_group_relation'
+    __tablename__ = 'sys_user_group_relation'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('sys_group.id'), nullable=False)
     type = db.Column(db.String(10), default='base', nullable=False)  # 关系类型：base/temp；基础/临时
     enable = db.Column(db.Boolean, default=True, nullable=False)  # 是否可用，默认为1；1可用，0冻结
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
