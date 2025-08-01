@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from modules.data_management.models import db, AccessSuccessTracker, OperationBehaviorTracker, DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker
 from modules.auth.decorators import admin_required, researcher_or_admin
 import uuid
+from modules.TrustValue import TrustValue
 
 audit_bp = Blueprint('audit', __name__)
 
@@ -26,15 +27,15 @@ def record_access():
             ast_record = AccessSuccessTracker(
                 id=str(uuid.uuid4()),
                 user_id=user_id,
-                num_as=1 if access_success else 0,
-                num_af=0 if access_success else 1
+                ast_num_as=1 if access_success else 0,
+                ast_num_af=0 if access_success else 1
             )
             db.session.add(ast_record)
         else:
             if access_success:
-                ast_record.num_as += 1
+                ast_record.ast_num_as += 1
             else:
-                ast_record.num_af += 1
+                ast_record.ast_num_af += 1
 
         # 记录操作行为
         operation_type = data.get('operation_type', 'view')
@@ -148,54 +149,59 @@ def record_access():
 def get_user_stats(user_id):
     """获取用户统计信息"""
     try:
+
         # 访问成功率
         ast = AccessSuccessTracker.query.filter_by(user_id=user_id).first()
         ast_data = {
-            'num_as': ast.num_as if ast else 0,
-            'num_af': ast.num_af if ast else 0
+            'num_as': ast.ast_num_as if ast else 0,
+            'num_af': ast.ast_num_af if ast else 0
         }
 
         # 操作行为
         ob = OperationBehaviorTracker.query.filter_by(user_id=user_id).first()
         ob_data = {
-            'num_view': ob.num_view if ob else 0,
-            'num_copy': ob.num_copy if ob else 0,
-            'num_download': ob.num_download if ob else 0,
-            'num_add': ob.num_add if ob else 0,
-            'num_revise': ob.num_revise if ob else 0,
-            'num_delete': ob.num_delete if ob else 0
+            'num_view': ob.ob_num_view if ob else 0,
+            'num_copy': ob.ob_num_copy if ob else 0,
+            'num_download': ob.ob_num_download if ob else 0,
+            'num_add': ob.ob_num_add if ob else 0,
+            'num_revise': ob.ob_num_revise if ob else 0,
+            'num_delete': ob.ob_num_delete if ob else 0
         }
 
         # 数据敏感度
         ds = DataSensitivityTracker.query.filter_by(user_id=user_id).first()
         ds_data = {
-            'num1': ds.num1 if ds else 0,
-            'num2': ds.num2 if ds else 0,
-            'num3': ds.num3 if ds else 0,
-            'num4': ds.num4 if ds else 0
+            'num1': ds.ds_num1 if ds else 0,
+            'num2': ds.ds_num2 if ds else 0,
+            'num3': ds.ds_num3 if ds else 0,
+            'num4': ds.ds_num4 if ds else 0
         }
 
         # 访问时间
         ap = AccessTimeTracker.query.filter_by(user_id=user_id).first()
         ap_data = {
-            'num_ni': ap.num_ni if ap else 0,
-            'num_ui': ap.num_ui if ap else 0
+            'num_ni': ap.ap_num_ni if ap else 0,
+            'num_ui': ap.ap_num_ui if ap else 0
         }
 
         # 访问IP
         at = AccessLocationTracker.query.filter_by(user_id=user_id).first()
         at_data = {
-            'num_nd': at.num_nd if at else 0,
-            'num_ad': at.num_ad if at else 0
+            'num_nd': at.at_num_nd if at else 0,
+            'num_ad': at.at_num_ad if at else 0
         }
-
+        Trustelement = TrustValue.TrustElement(ast_data, ob_data, ds_data, ap_data, at_data)
+        Trustvalue = TrustValue.TrustValue(Trustelement)
+        value = Trustvalue.GetValue()
+        # print(value)
         return jsonify({
             'user_id': user_id,
             'access_success': ast_data,
             'operation_behavior': ob_data,
             'data_sensitivity': ds_data,
             'access_period': ap_data,
-            'access_location': at_data
+            'access_location': at_data,
+            'Trustvalue': value
         }), 200
 
     except Exception as e:
@@ -235,8 +241,8 @@ def get_all_stats():
             stats_list.append({
                 'user_id': ast.user_id,
                 'access_success': {
-                    'num_as': ast.num_as,
-                    'num_af': ast.num_af
+                    'num_as': ast.ast_num_as,
+                    'num_af': ast.ast_num_af
                 },
                 'operation_behavior': {
                     'num_view': ob.num_view if ob else 0,
@@ -261,6 +267,7 @@ def get_all_stats():
                     'num_ad': at.num_ad if at else 0
                 }
             })
+
 
         return jsonify({
             'stats': stats_list,
