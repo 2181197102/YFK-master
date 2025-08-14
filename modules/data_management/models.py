@@ -8,77 +8,30 @@ from utils.extensions import db
 from datetime import datetime
 import json
 
-# ------------------- 访问成功率追踪 -------------------
-class AccessSuccessTracker(db.Model):
-    __tablename__ = 'sys_access_success_tracker'
+# ------------------- 用户logs ----------------------
+class UserLogs(db.Model):
+    __tablename__ = 'sys_user_logs'
 
     id         = db.Column(db.Integer, primary_key=True)
     user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
-    ast_num_as = db.Column(db.Integer, default=0, comment='访问成功次数')
-    ast_num_af = db.Column(db.Integer, default=0, comment='访问失败次数')
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
+    access_timestamp = db.Column(db.Integer, default=0, comment='访问成功次数')
+    access_ip = db.Column(db.Integer, default=0, comment='访问失败次数')
+    operation_type = db.Column(db.Date, default=datetime.utcnow().date())
+    target_data_sensitivity = 
+    target_disease_codes =
+    access_status =
     created_time = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow)
-
-    # 业务计算
-    def calculate_success_rate(self):
-        total = self.ast_num_as + self.ast_num_af
-        return self.ast_num_as / total if total > 0 else 0
 
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'success_count': self.ast_num_as,
-            'failure_count': self.ast_num_af,
-            'success_rate': self.calculate_success_rate(),
-            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
-        }
 
-# ------------------- 操作行为追踪 -------------------
-class OperationBehaviorTracker(db.Model):
-    __tablename__ = 'sys_operation_behavior_tracker'
-
-    id         = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
-    ob_num_view      = db.Column(db.Integer, default=0)
-    ob_num_copy      = db.Column(db.Integer, default=0)
-    ob_num_download  = db.Column(db.Integer, default=0)
-    ob_num_add       = db.Column(db.Integer, default=0)
-    ob_num_revise    = db.Column(db.Integer, default=0)
-    ob_num_delete    = db.Column(db.Integer, default=0)
-    ob_a = db.Column(db.Float, default=0.3)
-    ob_b = db.Column(db.Float, default=0.3)
-    ob_c = db.Column(db.Float, default=0.4)
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
-
-    def calculate_behavior_score(self):
-        read_ops   = self.ob_num_view + self.ob_num_copy + self.ob_num_download
-        write_ops  = self.ob_num_add + self.ob_num_revise
-        delete_ops = self.ob_num_delete
-        return read_ops * self.ob_a + write_ops * self.ob_b + delete_ops * self.ob_c
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'view_count': self.ob_num_view,
-            'copy_count': self.ob_num_copy,
-            'download_count': self.ob_num_download,
-            'add_count': self.ob_num_add,
-            'revise_count': self.ob_num_revise,
-            'delete_count': self.ob_num_delete,
-            'behavior_score': self.calculate_behavior_score(),
-            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }
 
 # ------------------- 数据敏感度追踪 -------------------
-class DataSensitivityTracker(db.Model):
-    __tablename__ = 'sys_data_sensitivity_tracker'
+class AccessSensitiveData(db.Model):
+    __tablename__ = 'sys_access_sensitive_data'
 
     id      = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
@@ -108,33 +61,6 @@ class DataSensitivityTracker(db.Model):
             'level3_count': self.ds_num3,
             'level4_count': self.ds_num4,
             'sensitivity_score': self.calculate_sensitivity_score(),
-            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
-        }
-
-# ------------------- 访问时间追踪 -------------------
-class AccessTimeTracker(db.Model):
-    __tablename__ = 'sys_access_time_tracker'
-
-    id      = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
-    ap_num_ni = db.Column(db.Integer, default=0)
-    ap_num_ui = db.Column(db.Integer, default=0)
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
-
-    def calculate_normal_time_ratio(self):
-        total = self.ap_num_ni + self.ap_num_ui
-        return self.ap_num_ni / total if total > 0 else 0
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'normal_time_count': self.ap_num_ni,
-            'unusual_time_count': self.ap_num_ui,
-            'normal_time_ratio': self.calculate_normal_time_ratio(),
             'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }
 
@@ -175,6 +101,120 @@ class AccessLocationTracker(db.Model):
             'abnormal_location_count': self.at_num_ad,
             'normal_location_ratio': self.calculate_normal_location_ratio(),
             'last_ip': self.last_ip,
+            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
+        }
+
+
+# ------------------- 用户ip ----------------------
+class UserIps(db.Model):
+    __tablename__ = 'sys_access_success_tracker'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    ip_address
+    access_count
+    last_seen
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+
+        }
+
+# ------------------- 访问成功率追踪 -------------------
+class AccessSuccessTracker(db.Model):
+    __tablename__ = 'sys_access_success_tracker'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    ast_num_as = db.Column(db.Integer, default=0, comment='访问成功次数')
+    ast_num_af = db.Column(db.Integer, default=0, comment='访问失败次数')
+    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
+    created_time = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    # 业务计算
+    def calculate_success_rate(self):
+        total = self.ast_num_as + self.ast_num_af
+        return self.ast_num_as / total if total > 0 else 0
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'success_count': self.ast_num_as,
+            'failure_count': self.ast_num_af,
+            'success_rate': self.calculate_success_rate(),
+            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
+        }
+
+
+# ------------------- 访问时间追踪 -------------------
+class AccessTimeTracker(db.Model):
+    __tablename__ = 'sys_access_time_tracker'
+
+    id      = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    ap_num_ni = db.Column(db.Integer, default=0)
+    ap_num_ui = db.Column(db.Integer, default=0)
+    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
+                              onupdate=datetime.utcnow)
+
+    def calculate_normal_time_ratio(self):
+        total = self.ap_num_ni + self.ap_num_ui
+        return self.ap_num_ni / total if total > 0 else 0
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'normal_time_count': self.ap_num_ni,
+            'unusual_time_count': self.ap_num_ui,
+            'normal_time_ratio': self.calculate_normal_time_ratio(),
+            'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
+        }
+
+# ------------------- 操作行为追踪 -------------------
+class OperationBehaviorTracker(db.Model):
+    __tablename__ = 'sys_operation_behavior_tracker'
+
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    ob_num_view      = db.Column(db.Integer, default=0)
+    ob_num_copy      = db.Column(db.Integer, default=0)
+    ob_num_download  = db.Column(db.Integer, default=0)
+    ob_num_add       = db.Column(db.Integer, default=0)
+    ob_num_revise    = db.Column(db.Integer, default=0)
+    ob_num_delete    = db.Column(db.Integer, default=0)
+    ob_a = db.Column(db.Float, default=0.3)
+    ob_b = db.Column(db.Float, default=0.3)
+    ob_c = db.Column(db.Float, default=0.4)
+    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
+                              onupdate=datetime.utcnow)
+
+    def calculate_behavior_score(self):
+        read_ops   = self.ob_num_view + self.ob_num_copy + self.ob_num_download
+        write_ops  = self.ob_num_add + self.ob_num_revise
+        delete_ops = self.ob_num_delete
+        return read_ops * self.ob_a + write_ops * self.ob_b + delete_ops * self.ob_c
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'view_count': self.ob_num_view,
+            'copy_count': self.ob_num_copy,
+            'download_count': self.ob_num_download,
+            'add_count': self.ob_num_add,
+            'revise_count': self.ob_num_revise,
+            'delete_count': self.ob_num_delete,
+            'behavior_score': self.calculate_behavior_score(),
             'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }
 
@@ -243,3 +283,25 @@ class ICD10Code(db.Model):
 
     def __repr__(self):
         return f"<ICD10Code {self.code} – {self.short_desc or self.description[:30]}>"
+
+# ------------------- 病种-数据项 -------------------
+class DiseaseDataItem(db.Model):
+    __tablename__ = 'sys_disease_data_item'
+
+    id    = db.Column(db.Integer, primary_key=True)
+    disease_code    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
+    disease_name    = db.Column(db.Integer, default=0)
+    description     = db.Column(db.Integer, default=0)
+    associated_fields    = db.Column(db.Integer, default=0)
+    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
+                              onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'disease_code': self.disease_code,
+            'disease_name': self.disease_name,
+            'description': self.description,
+            'associated_fields': self.associated_fields
+        }
