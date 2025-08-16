@@ -32,21 +32,23 @@ class User(db.Model):
                                            cascade='all, delete-orphan')
 
     # 依赖其他模块里的模型名（字符串声明即可，SQLAlchemy 会延迟解析）
-    access_success_records = db.relationship('AccessSuccessTracker',
-                                             backref='user', lazy='dynamic',
-                                             cascade='all, delete-orphan')
-    operation_behavior_records = db.relationship('OperationBehaviorTracker',
-                                                 backref='user', lazy='dynamic',
-                                                 cascade='all, delete-orphan')
-    data_sensitivity_records = db.relationship('DataSensitivityTracker',
-                                               backref='user', lazy='dynamic',
-                                               cascade='all, delete-orphan')
-    access_time_records = db.relationship('AccessTimeTracker',
-                                          backref='user', lazy='dynamic',
-                                          cascade='all, delete-orphan')
-    access_location_records = db.relationship('AccessLocationTracker',
-                                              backref='user', lazy='dynamic',
-                                              cascade='all, delete-orphan')
+    # 注意：由于新模型使用身份证号而不是user_id作为关联字段，这些关系暂时注释掉
+    # 需要通过id_card字段进行关联查询
+    # access_success_records = db.relationship('UserAccessSuccessTracker',
+    #                                          backref='user', lazy='dynamic',
+    #                                          cascade='all, delete-orphan')
+    # operation_behavior_records = db.relationship('UserOperationBehaviorTracker',
+    #                                              backref='user', lazy='dynamic',
+    #                                              cascade='all, delete-orphan')
+    # data_sensitivity_records = db.relationship('UserAccessSensitiveData',
+    #                                            backref='user', lazy='dynamic',
+    #                                            cascade='all, delete-orphan')
+    # access_time_records = db.relationship('UserAccessTimeTracker',
+    #                                       backref='user', lazy='dynamic',
+    #                                       cascade='all, delete-orphan')
+    # access_location_records = db.relationship('UserAccessLocationTracker',
+    #                                           backref='user', lazy='dynamic',
+    #                                           cascade='all, delete-orphan')
 
     # ---------------- 密码辅助方法 ----------------
     def set_password(self, password):

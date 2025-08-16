@@ -15,7 +15,20 @@ from modules.data_management.models import *
 from modules.system_config.models import *
 
 __all__ = [
+    # 用户认证相关模型
     'User', 'Role', 'UserRoleRelation', 'Group', 'UserGroupRelation',
-    'AccessSuccessTracker', 'OperationBehaviorTracker', 'DataSensitivityTracker',
-    'AccessTimeTracker', 'AccessLocationTracker', 'SystemConfig'
+    
+    # 数据管理相关模型
+    'UserLogs',                        # 用户日志表
+    'UserAccessSensitiveData',         # 用户访问敏感数据统计表
+    'UserAccessLocationTracker',       # 用户访问地点统计表
+    'UserIps',                         # 用户常用IP表
+    'UserAccessSuccessTracker',        # 用户访问成功率统计表
+    'UserAccessTimeTracker',           # 用户访问时间统计表
+    'UserOperationBehaviorTracker',    # 用户操作行为统计表
+    'ICD10Code',                       # ICD-10码表
+    'DiseaseDataItem',                 # 病种-数据项字段表
+    
+    # 系统配置相关模型
+    'SystemConfig'
 ]
