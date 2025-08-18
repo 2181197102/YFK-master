@@ -5,7 +5,7 @@ import json
 
 # modules/data_management/models.py
 from utils.extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 # ------------------- 用户logs ----------------------
@@ -13,7 +13,7 @@ class UserLogs(db.Model):
     """用户日志表 - 记录用户的访问操作"""
     __tablename__ = 'user_logs'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     access_timestamp = db.Column(db.TIMESTAMP, nullable=False, comment='发生时间戳')
     access_ip = db.Column(db.String(45), nullable=False, comment='访问IP地址')
@@ -25,7 +25,7 @@ class UserLogs(db.Model):
     target_disease_codes = db.Column(db.Text, nullable=False, comment='疾病ICD编码列表，JSON格式存储')
     access_status = db.Column(db.Enum('SUCCESS', 'FAILURE', 'DENIED', 
                                      name='access_status_enum'), nullable=False, comment='访问请求的结果')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     def get_disease_codes_list(self):
         """获取疾病编码列表"""
@@ -56,15 +56,15 @@ class UserAccessSensitiveData(db.Model):
     """用户访问敏感数据统计表"""
     __tablename__ = 'user_access_sensitive_data'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     ds_num1 = db.Column(db.SmallInteger, nullable=False, default=0, comment='准标识符访问次数')
     ds_num2 = db.Column(db.SmallInteger, nullable=False, default=0, comment='显示标识符访问次数')
     ds_num3 = db.Column(db.SmallInteger, nullable=False, default=0, comment='低敏感数据访问次数')
     ds_num4 = db.Column(db.SmallInteger, nullable=False, default=0, comment='高敏感数据访问次数')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def calculate_sensitivity_score(self, weights=None):
         """计算敏感度评分"""
@@ -100,13 +100,13 @@ class UserAccessLocationTracker(db.Model):
     """用户访问地点统计表"""
     __tablename__ = 'user_access_location_tracker'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     at_num_nd = db.Column(db.SmallInteger, nullable=False, default=0, comment='正常地点访问次数')
     at_num_ad = db.Column(db.SmallInteger, nullable=False, default=0, comment='异常地点访问次数')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def calculate_normal_location_ratio(self):
         """计算正常地点访问比例"""
@@ -130,7 +130,7 @@ class UserIps(db.Model):
     """用户常用IP表"""
     __tablename__ = 'user_ips'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     ip_address = db.Column(db.String(45), nullable=False, comment='IP地址')
     access_count = db.Column(db.SmallInteger, nullable=False, default=0, comment='IP访问次数')
@@ -150,13 +150,13 @@ class UserAccessSuccessTracker(db.Model):
     """用户访问成功率统计表"""
     __tablename__ = 'user_access_success_tracker'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     ast_num_as = db.Column(db.SmallInteger, nullable=False, default=0, comment='访问成功次数')
     ast_num_af = db.Column(db.SmallInteger, nullable=False, default=0, comment='访问失败次数')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def calculate_success_rate(self):
         """计算访问成功率"""
@@ -180,14 +180,14 @@ class UserAccessTimeTracker(db.Model):
     """用户访问时间统计表"""
     __tablename__ = 'user_access_time_tracker'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     ap_num_ni = db.Column(db.SmallInteger, nullable=False, default=0, comment='正常时间访问次数')
     ap_num_ui = db.Column(db.SmallInteger, nullable=False, default=0, comment='异常时间访问次数')
     work_time = db.Column(db.Text, nullable=True, comment='正常访问时间，JSON格式存储')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def calculate_normal_time_ratio(self):
         """计算正常时间访问比例"""
@@ -222,7 +222,7 @@ class UserOperationBehaviorTracker(db.Model):
     """用户操作行为统计表"""
     __tablename__ = 'user_operation_behavior_tracker'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     id_num = db.Column(db.String(20), nullable=False, comment='身份证号')
     ob_num_view = db.Column(db.SmallInteger, nullable=False, default=0, comment='查看次数')
     ob_num_copy = db.Column(db.SmallInteger, nullable=False, default=0, comment='复制次数')
@@ -230,9 +230,9 @@ class UserOperationBehaviorTracker(db.Model):
     ob_num_add = db.Column(db.SmallInteger, nullable=False, default=0, comment='新增次数')
     ob_num_revise = db.Column(db.SmallInteger, nullable=False, default=0, comment='修改次数')
     ob_num_delet = db.Column(db.SmallInteger, nullable=False, default=0, comment='删除次数')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def calculate_behavior_score(self, weights=None):
         """计算操作行为评分"""
@@ -291,9 +291,9 @@ class ICD10Code(db.Model):
     short_desc     = db.Column(db.String(256), nullable=True,  comment='简短描述 / 疾病名称')
 
     # 统一的审计字段
-    created_time   = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time   = db.Column(db.DateTime, default=datetime.utcnow,
-                               onupdate=datetime.utcnow)
+    created_time   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                               onupdate=lambda: datetime.now(timezone.utc))
 
     # ---------- 工具方法 ----------
     def to_dict(self):
@@ -338,14 +338,14 @@ class DiseaseDataItem(db.Model):
     """病种-数据项字段表"""
     __tablename__ = 'disease_data_item'
 
-    id = db.Column(db.String(20), primary_key=True)
+    id = db.Column(db.String(64), primary_key=True)
     disease_code = db.Column(db.String(20), db.ForeignKey('sys_icd10_codes.code'), nullable=False, comment='病种代码，ICD-10外键')
     disease_name = db.Column(db.String(200), nullable=False, comment='病种名称')
     description = db.Column(db.String(500), nullable=False, comment='病种描述')
     associated_fields = db.Column(db.Text, nullable=False, comment='数据项列表，JSON格式存储')
-    created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow, nullable=False)
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 建立与ICD10Code的关系
     icd_code = db.relationship('ICD10Code', backref='disease_data_items')

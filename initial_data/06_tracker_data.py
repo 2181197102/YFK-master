@@ -2,7 +2,7 @@
 
 from modules.data_management.models import UserAccessSuccessTracker
 from modules.auth.models import User
-from datetime import datetime
+from datetime import datetime, timezone
 
 def insert_data(db):
     """
@@ -27,12 +27,12 @@ def insert_data(db):
         ).first()
         if not existing_tracker:
             new_tracker = UserAccessSuccessTracker(
-                id=f"succ_{admin_user.id_card}_{datetime.utcnow().strftime('%Y%m%d')}",
+                id=f"succ_{admin_user.id_card[-6:]}_{datetime.now(timezone.utc).strftime('%y%m%d')}",
                 id_num=admin_user.id_card,
                 ast_num_as=95,  # 访问成功次数
                 ast_num_af=5,   # 访问失败次数
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             db.session.add(new_tracker)
             print(f"    已添加管理员用户 {admin_user.id_card} 的访问成功率追踪数据。")
@@ -46,12 +46,12 @@ def insert_data(db):
         ).first()
         if not existing_tracker:
             new_tracker = UserAccessSuccessTracker(
-                id=f"succ_{patient_alice.id_card}_{datetime.utcnow().strftime('%Y%m%d')}",
+                id=f"succ_{patient_alice.id_card[-6:]}_{datetime.now(timezone.utc).strftime('%y%m%d')}",
                 id_num=patient_alice.id_card,
                 ast_num_as=48,  # 访问成功次数
                 ast_num_af=2,   # 访问失败次数
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             db.session.add(new_tracker)
             print(f"    已添加 patient_alice 用户 {patient_alice.id_card} 的访问成功率追踪数据。")
@@ -65,12 +65,12 @@ def insert_data(db):
         ).first()
         if not existing_tracker:
             new_tracker = UserAccessSuccessTracker(
-                id=f"succ_{dr_smith.id_card}_{datetime.utcnow().strftime('%Y%m%d')}",
+                id=f"succ_{dr_smith.id_card[-6:]}_{datetime.now(timezone.utc).strftime('%y%m%d')}",
                 id_num=dr_smith.id_card,
                 ast_num_as=130,  # 访问成功次数
                 ast_num_af=5,    # 访问失败次数
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             db.session.add(new_tracker)
             print(f"    已添加 dr_smith 用户 {dr_smith.id_card} 的访问成功率追踪数据。")
@@ -84,12 +84,12 @@ def insert_data(db):
         ).first()
         if not existing_tracker:
             new_tracker = UserAccessSuccessTracker(
-                id=f"succ_{researcher_eve.id_card}_{datetime.utcnow().strftime('%Y%m%d')}",
+                id=f"succ_{researcher_eve.id_card[-6:]}_{datetime.now(timezone.utc).strftime('%y%m%d')}",
                 id_num=researcher_eve.id_card,
                 ast_num_as=90,  # 访问成功次数
                 ast_num_af=10,  # 访问失败次数（科研人员可能遇到更多权限问题）
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             db.session.add(new_tracker)
             print(f"    已添加 researcher_eve 用户 {researcher_eve.id_card} 的访问成功率追踪数据。")

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from modules.data_management.models import db, AccessSuccessTracker, OperationBehaviorTracker, DataSensitivityTracker, AccessTimeTracker, AccessLocationTracker
+from modules.data_management.models import db, UserAccessSuccessTracker, UserOperationBehaviorTracker, UserAccessSensitiveData, UserAccessTimeTracker, UserAccessLocationTracker
 from modules.auth.decorators import admin_required, researcher_or_admin
 import uuid
 
@@ -20,118 +20,111 @@ def record_access():
 
         # 记录访问成功率
         access_success = data.get('success', True)
-        ast_record = AccessSuccessTracker.query.filter_by(user_id=user_id).first()
+        ast_record = UserAccessSuccessTracker.query.filter_by(id_num=user_id).first()
 
         if not ast_record:
-            ast_record = AccessSuccessTracker(
+            ast_record = UserAccessSuccessTracker(
                 id=str(uuid.uuid4()),
-                user_id=user_id,
-                num_as=1 if access_success else 0,
-                num_af=0 if access_success else 1
+                id_num=user_id,
+                ast_num_as=1 if access_success else 0,
+                ast_num_af=0 if access_success else 1
             )
             db.session.add(ast_record)
         else:
             if access_success:
-                ast_record.num_as += 1
+                ast_record.ast_num_as += 1
             else:
-                ast_record.num_af += 1
+                ast_record.ast_num_af += 1
 
         # 记录操作行为
         operation_type = data.get('operation_type', 'view')
-        ob_record = OperationBehaviorTracker.query.filter_by(user_id=user_id).first()
+        ob_record = UserOperationBehaviorTracker.query.filter_by(id_num=user_id).first()
 
         if not ob_record:
-            ob_record = OperationBehaviorTracker(
+            ob_record = UserOperationBehaviorTracker(
                 id=str(uuid.uuid4()),
-                user_id=user_id,
-                num_view=1 if operation_type == 'view' else 0,
-                num_copy=1 if operation_type == 'copy' else 0,
-                num_download=1 if operation_type == 'download' else 0,
-                num_add=1 if operation_type == 'add' else 0,
-                num_revise=1 if operation_type == 'revise' else 0,
-                num_delete=1 if operation_type == 'delete' else 0,
-                a=0.3,
-                b=0.3,
-                c=0.4
+                id_num=user_id,
+                ob_num_view=1 if operation_type == 'view' else 0,
+                ob_num_copy=1 if operation_type == 'copy' else 0,
+                ob_num_download=1 if operation_type == 'download' else 0,
+                ob_num_add=1 if operation_type == 'add' else 0,
+                ob_num_revise=1 if operation_type == 'revise' else 0,
+                ob_num_delet=1 if operation_type == 'delete' else 0
             )
             db.session.add(ob_record)
         else:
             if operation_type == 'view':
-                ob_record.num_view += 1
+                ob_record.ob_num_view += 1
             elif operation_type == 'copy':
-                ob_record.num_copy += 1
+                ob_record.ob_num_copy += 1
             elif operation_type == 'download':
-                ob_record.num_download += 1
+                ob_record.ob_num_download += 1
             elif operation_type == 'add':
-                ob_record.num_add += 1
+                ob_record.ob_num_add += 1
             elif operation_type == 'revise':
-                ob_record.num_revise += 1
+                ob_record.ob_num_revise += 1
             elif operation_type == 'delete':
-                ob_record.num_delete += 1
+                ob_record.ob_num_delet += 1
 
         # 记录数据敏感度
         sensitivity_level = data.get('sensitivity_level', 1)
-        ds_record = DataSensitivityTracker.query.filter_by(user_id=user_id).first()
+        ds_record = UserAccessSensitiveData.query.filter_by(id_num=user_id).first()
 
         if not ds_record:
-            ds_record = DataSensitivityTracker(
+            ds_record = UserAccessSensitiveData(
                 id=str(uuid.uuid4()),
-                user_id=user_id,
-                num1=1 if sensitivity_level == 1 else 0,
-                num2=1 if sensitivity_level == 2 else 0,
-                num3=1 if sensitivity_level == 3 else 0,
-                num4=1 if sensitivity_level == 4 else 0,
-                a=1.0,
-                b=1.0,
-                c=1.0,
-                d=1.0
+                id_num=user_id,
+                ds_num1=1 if sensitivity_level == 1 else 0,
+                ds_num2=1 if sensitivity_level == 2 else 0,
+                ds_num3=1 if sensitivity_level == 3 else 0,
+                ds_num4=1 if sensitivity_level == 4 else 0
             )
             db.session.add(ds_record)
         else:
             if sensitivity_level == 1:
-                ds_record.num1 += 1
+                ds_record.ds_num1 += 1
             elif sensitivity_level == 2:
-                ds_record.num2 += 1
+                ds_record.ds_num2 += 1
             elif sensitivity_level == 3:
-                ds_record.num3 += 1
+                ds_record.ds_num3 += 1
             elif sensitivity_level == 4:
-                ds_record.num4 += 1
+                ds_record.ds_num4 += 1
 
         # 记录访问时间
         is_unusual_time = data.get('is_unusual_time', False)
-        ap_record = AccessTimeTracker.query.filter_by(user_id=user_id).first()
+        ap_record = UserAccessTimeTracker.query.filter_by(id_num=user_id).first()
 
         if not ap_record:
-            ap_record = AccessTimeTracker(
+            ap_record = UserAccessTimeTracker(
                 id=str(uuid.uuid4()),
-                user_id=user_id,
-                num_ni=0 if is_unusual_time else 1,
-                num_ui=1 if is_unusual_time else 0
+                id_num=user_id,
+                ap_num_ni=0 if is_unusual_time else 1,
+                ap_num_ui=1 if is_unusual_time else 0
             )
             db.session.add(ap_record)
         else:
             if is_unusual_time:
-                ap_record.num_ui += 1
+                ap_record.ap_num_ui += 1
             else:
-                ap_record.num_ni += 1
+                ap_record.ap_num_ni += 1
 
         # 记录访问IP
         is_abnormal_ip = data.get('is_abnormal_ip', False)
-        at_record = AccessLocationTracker.query.filter_by(user_id=user_id).first()
+        at_record = UserAccessLocationTracker.query.filter_by(id_num=user_id).first()
 
         if not at_record:
-            at_record = AccessLocationTracker(
+            at_record = UserAccessLocationTracker(
                 id=str(uuid.uuid4()),
-                user_id=user_id,
-                num_nd=0 if is_abnormal_ip else 1,
-                num_ad=1 if is_abnormal_ip else 0
+                id_num=user_id,
+                at_num_nd=0 if is_abnormal_ip else 1,
+                at_num_ad=1 if is_abnormal_ip else 0
             )
             db.session.add(at_record)
         else:
             if is_abnormal_ip:
-                at_record.num_ad += 1
+                at_record.at_num_ad += 1
             else:
-                at_record.num_nd += 1
+                at_record.at_num_nd += 1
 
         db.session.commit()
 
@@ -149,44 +142,44 @@ def get_user_stats(user_id):
     """获取用户统计信息"""
     try:
         # 访问成功率
-        ast = AccessSuccessTracker.query.filter_by(user_id=user_id).first()
+        ast = UserAccessSuccessTracker.query.filter_by(id_num=user_id).first()
         ast_data = {
-            'num_as': ast.num_as if ast else 0,
-            'num_af': ast.num_af if ast else 0
+            'num_as': ast.ast_num_as if ast else 0,
+            'num_af': ast.ast_num_af if ast else 0
         }
 
         # 操作行为
-        ob = OperationBehaviorTracker.query.filter_by(user_id=user_id).first()
+        ob = UserOperationBehaviorTracker.query.filter_by(id_num=user_id).first()
         ob_data = {
-            'num_view': ob.num_view if ob else 0,
-            'num_copy': ob.num_copy if ob else 0,
-            'num_download': ob.num_download if ob else 0,
-            'num_add': ob.num_add if ob else 0,
-            'num_revise': ob.num_revise if ob else 0,
-            'num_delete': ob.num_delete if ob else 0
+            'num_view': ob.ob_num_view if ob else 0,
+            'num_copy': ob.ob_num_copy if ob else 0,
+            'num_download': ob.ob_num_download if ob else 0,
+            'num_add': ob.ob_num_add if ob else 0,
+            'num_revise': ob.ob_num_revise if ob else 0,
+            'num_delete': ob.ob_num_delet if ob else 0
         }
 
         # 数据敏感度
-        ds = DataSensitivityTracker.query.filter_by(user_id=user_id).first()
+        ds = UserAccessSensitiveData.query.filter_by(id_num=user_id).first()
         ds_data = {
-            'num1': ds.num1 if ds else 0,
-            'num2': ds.num2 if ds else 0,
-            'num3': ds.num3 if ds else 0,
-            'num4': ds.num4 if ds else 0
+            'num1': ds.ds_num1 if ds else 0,
+            'num2': ds.ds_num2 if ds else 0,
+            'num3': ds.ds_num3 if ds else 0,
+            'num4': ds.ds_num4 if ds else 0
         }
 
         # 访问时间
-        ap = AccessTimeTracker.query.filter_by(user_id=user_id).first()
+        ap = UserAccessTimeTracker.query.filter_by(id_num=user_id).first()
         ap_data = {
-            'num_ni': ap.num_ni if ap else 0,
-            'num_ui': ap.num_ui if ap else 0
+            'num_ni': ap.ap_num_ni if ap else 0,
+            'num_ui': ap.ap_num_ui if ap else 0
         }
 
         # 访问IP
-        at = AccessLocationTracker.query.filter_by(user_id=user_id).first()
+        at = UserAccessLocationTracker.query.filter_by(id_num=user_id).first()
         at_data = {
-            'num_nd': at.num_nd if at else 0,
-            'num_ad': at.num_ad if at else 0
+            'num_nd': at.at_num_nd if at else 0,
+            'num_ad': at.at_num_ad if at else 0
         }
 
         return jsonify({
@@ -220,45 +213,45 @@ def get_all_stats():
         per_page = request.args.get('per_page', 10, type=int)
 
         # 获取所有用户的访问成功率记录
-        ast_records = AccessSuccessTracker.query.paginate(
+        ast_records = UserAccessSuccessTracker.query.paginate(
             page=page, per_page=per_page, error_out=False
         )
 
         stats_list = []
         for ast in ast_records.items:
             # 获取对应的其他记录
-            ob = OperationBehaviorTracker.query.filter_by(user_id=ast.user_id).first()
-            ds = DataSensitivityTracker.query.filter_by(user_id=ast.user_id).first()
-            ap = AccessTimeTracker.query.filter_by(user_id=ast.user_id).first()
-            at = AccessLocationTracker.query.filter_by(user_id=ast.user_id).first()
+            ob = UserOperationBehaviorTracker.query.filter_by(id_num=ast.id_num).first()
+            ds = UserAccessSensitiveData.query.filter_by(id_num=ast.id_num).first()
+            ap = UserAccessTimeTracker.query.filter_by(id_num=ast.id_num).first()
+            at = UserAccessLocationTracker.query.filter_by(id_num=ast.id_num).first()
 
             stats_list.append({
-                'user_id': ast.user_id,
+                'user_id': ast.id_num,
                 'access_success': {
-                    'num_as': ast.num_as,
-                    'num_af': ast.num_af
+                    'num_as': ast.ast_num_as,
+                    'num_af': ast.ast_num_af
                 },
                 'operation_behavior': {
-                    'num_view': ob.num_view if ob else 0,
-                    'num_copy': ob.num_copy if ob else 0,
-                    'num_download': ob.num_download if ob else 0,
-                    'num_add': ob.num_add if ob else 0,
-                    'num_revise': ob.num_revise if ob else 0,
-                    'num_delete': ob.num_delete if ob else 0
+                    'num_view': ob.ob_num_view if ob else 0,
+                    'num_copy': ob.ob_num_copy if ob else 0,
+                    'num_download': ob.ob_num_download if ob else 0,
+                    'num_add': ob.ob_num_add if ob else 0,
+                    'num_revise': ob.ob_num_revise if ob else 0,
+                    'num_delete': ob.ob_num_delet if ob else 0
                 },
                 'data_sensitivity': {
-                    'num1': ds.num1 if ds else 0,
-                    'num2': ds.num2 if ds else 0,
-                    'num3': ds.num3 if ds else 0,
-                    'num4': ds.num4 if ds else 0
+                    'num1': ds.ds_num1 if ds else 0,
+                    'num2': ds.ds_num2 if ds else 0,
+                    'num3': ds.ds_num3 if ds else 0,
+                    'num4': ds.ds_num4 if ds else 0
                 },
                 'access_period': {
-                    'num_ni': ap.num_ni if ap else 0,
-                    'num_ui': ap.num_ui if ap else 0
+                    'num_ni': ap.ap_num_ni if ap else 0,
+                    'num_ui': ap.ap_num_ui if ap else 0
                 },
                 'access_location': {
-                    'num_nd': at.num_nd if at else 0,
-                    'num_ad': at.num_ad if at else 0
+                    'num_nd': at.at_num_nd if at else 0,
+                    'num_ad': at.at_num_ad if at else 0
                 }
             })
 
