@@ -6,7 +6,7 @@ from modules.medical_institutions.models import (
 )
 from modules.data_management.models import ICD10Code
 from modules.auth.models import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import json
 
@@ -45,7 +45,7 @@ def insert_data(db):
         doctor = random.choice(doctors)
         
         # 创建病历
-        record_id = f"rec_{patient.id_card}_{datetime.utcnow().strftime('%Y%m%d')}{record_id_counter:03d}"
+        record_id = f"rec_{patient.id_card}_{datetime.now(timezone.utc).strftime('%Y%m%d')}{record_id_counter:03d}"
         
         medical_record = PatientMedicalRecord(
             id=record_id,
@@ -53,8 +53,8 @@ def insert_data(db):
             patient_name=patient.username,
             patient_sex=random.choice([1, 2]),  # 1男2女
             doctor_code=doctor["code"],
-            created_time=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
+            updated_time=datetime.now(timezone.utc)
         )
         
         db.session.add(medical_record)
@@ -67,8 +67,8 @@ def insert_data(db):
                 id=f"mrd_{record_id}_{disease.code}_{record_id_counter}",
                 medical_record_num=record_id,
                 disease_code=disease.code,
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             db.session.add(disease_record)
             print(f"      添加疾病诊断: {disease.code}")
@@ -88,7 +88,7 @@ def insert_data(db):
                 "data_fields": {
                     "systolic": random.randint(90, 160),
                     "diastolic": random.randint(60, 100),
-                    "measurement_time": datetime.utcnow().isoformat()
+                    "measurement_time": datetime.now(timezone.utc).isoformat()
                 }
             },
             {
@@ -106,8 +106,8 @@ def insert_data(db):
                 id=f"mdi_{record_id}_{item_data['associated_code']}_{record_id_counter}",
                 medical_record_num=record_id,
                 associated_code=item_data["associated_code"],
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             data_item.set_data_fields_dict(item_data["data_fields"])
             db.session.add(data_item)
@@ -121,8 +121,8 @@ def insert_data(db):
             patient_name=patient.username,
             patient_id_num=patient.id_card,
             medical_record_num=record_id,
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
         db.session.add(doctor_record)
         print(f"      添加医生关联: {doctor['name']} ({doctor['code']})")

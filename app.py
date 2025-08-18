@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from config import config
 import os
+
 from utils.extensions import db, jwt
 from utils.response import (
     success_response,
@@ -10,7 +11,7 @@ from utils.response import (
     not_found_response,
     server_error_response
 )
-from datetime import datetime
+from datetime import datetime, timezone
 import pytz
 
 
@@ -18,7 +19,7 @@ def create_app(config_name=None):
     app = Flask(__name__)
 
     print("当前本地时间:", datetime.now())
-    print("当前 UTC 时间:", datetime.utcnow())
+    print("当前 UTC 时间:", datetime.now(timezone.utc))
     print("当前北京时间:", datetime.now(pytz.timezone("Asia/Shanghai")))
 
     # 配置应用

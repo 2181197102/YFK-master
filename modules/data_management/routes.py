@@ -1,5 +1,5 @@
 # modules/data_management/routes.py
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from flask import Blueprint, request, current_app
@@ -92,7 +92,7 @@ def update_access_success():
         num_as = data.get("num_as", 0)
         num_af = data.get("num_af", 0)
         # print(data)
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         record = AccessSuccessTracker.query.filter(
             AccessSuccessTracker.user_id == user_id,
             # func.date(AccessSuccessTracker.created_time) == today,
@@ -102,7 +102,7 @@ def update_access_success():
             # print(111)
             record.ast_num_as += num_as
             record.ast_num_af += num_af
-            record.updated_time = datetime.utcnow()
+            record.updated_time = datetime.now(timezone.utc)
         else:
             # print(222)
             record = AccessSuccessTracker(
@@ -192,7 +192,7 @@ def update_operation_behavior():
 
         user_id = data.get("user_id", current_user_id)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         record = OperationBehaviorTracker.query.filter(
             OperationBehaviorTracker.user_id == user_id,
             # func.date(OperationBehaviorTracker.created_time) == today,
@@ -205,7 +205,7 @@ def update_operation_behavior():
             record.ob_num_add += data.get("num_add", 0)
             record.ob_num_revise += data.get("num_revise", 0)
             record.ob_num_delete += data.get("num_delete", 0)
-            record.updated_time = datetime.utcnow()
+            record.updated_time = datetime.now(timezone.utc)
         else:
             record = OperationBehaviorTracker(
                 # id=str(uuid.uuid4()),
@@ -298,7 +298,7 @@ def update_data_sensitivity():
 
         user_id = data.get("user_id", current_user_id)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         record = DataSensitivityTracker.query.filter(
             DataSensitivityTracker.user_id == user_id,
             # func.date(DataSensitivityTracker.created_time) == today,
@@ -309,7 +309,7 @@ def update_data_sensitivity():
             record.ds_num2 += data.get("num2", 0)
             record.ds_num3 += data.get("num3", 0)
             record.ds_num4 += data.get("num4", 0)
-            record.updated_time = datetime.utcnow()
+            record.updated_time = datetime.now(timezone.utc)
         else:
             record = DataSensitivityTracker(
                 # id=str(uuid.uuid4()),
@@ -393,7 +393,7 @@ def update_access_period():
 
         user_id = data.get("user_id", current_user_id)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         record = AccessTimeTracker.query.filter(
             AccessTimeTracker.user_id == user_id,
             # func.date(AccessTimeTracker.created_time) == today,
@@ -402,7 +402,7 @@ def update_access_period():
         if record:
             record.ap_num_ni += data.get("num_ni", 0)
             record.ap_num_ui += data.get("num_ui", 0)
-            record.updated_time = datetime.utcnow()
+            record.updated_time = datetime.now(timezone.utc)
         else:
             record = AccessTimeTracker(
                 # id=str(uuid.uuid4()),
@@ -480,7 +480,7 @@ def update_access_location():
 
         user_id = data.get("user_id", current_user_id)
 
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         record = AccessLocationTracker.query.filter(
             AccessLocationTracker.user_id == user_id,
             # func.date(AccessLocationTracker.created_time) == today,
@@ -489,7 +489,7 @@ def update_access_location():
         if record:
             record.at_num_nd += data.get("num_nd", 0)
             record.at_num_ad += data.get("num_ad", 0)
-            record.updated_time = datetime.utcnow()
+            record.updated_time = datetime.now(timezone.utc)
         else:
             record = AccessLocationTracker(
                 # id=str(uuid.uuid4()),

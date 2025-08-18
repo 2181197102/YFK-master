@@ -12,7 +12,7 @@
     - UserGroupRelation  (一对一；可选)
 """
 # ────────────────────────────── 导入依赖 ──────────────────────────────
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from functools import wraps
 import json
 
@@ -155,7 +155,7 @@ def _update_access_location_tracker(user_id, current_ip):
     import json
 
     # 查找或创建今天的记录
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     record = AccessLocationTracker.query.filter(
         AccessLocationTracker.user_id == user_id,
         AccessLocationTracker.date_recorded == today

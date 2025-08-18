@@ -4,7 +4,7 @@
 提供数据项和敏感等级管理的接口
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from flask import Blueprint, request, current_app
@@ -95,15 +95,15 @@ def create_data_item():
             return error_response("数据项代码已存在", 400)
 
         # 生成ID
-        item_id = f"di_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        item_id = f"di_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
 
         # 创建新数据项
         data_item = DataItem(
             id=item_id,
             associated_name=data["associated_name"],
             associated_code=data["associated_code"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         db.session.add(data_item)
@@ -165,7 +165,7 @@ def update_data_item(item_id):
                 return error_response("数据项代码已存在", 400)
             data_item.associated_code = data["associated_code"]
 
-        data_item.updated_time = datetime.utcnow()
+        data_item.updated_time = datetime.now(timezone.utc)
 
         db.session.commit()
 
@@ -274,7 +274,7 @@ def create_sensitivity_level():
             return error_response("敏感等级必须是1-4之间的整数", 400)
 
         # 生成ID
-        level_id = f"ssl_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+        level_id = f"ssl_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
 
         # 创建新敏感等级
         sensitivity_level = StaticSensitivityLevel(
@@ -282,8 +282,8 @@ def create_sensitivity_level():
             data_name=data["data_name"],
             description=data["description"],
             sensitivity_level=data["sensitivity_level"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         db.session.add(sensitivity_level)
@@ -343,7 +343,7 @@ def update_sensitivity_level(level_id):
                 return error_response("敏感等级必须是1-4之间的整数", 400)
             sensitivity_level.sensitivity_level = data["sensitivity_level"]
 
-        sensitivity_level.updated_time = datetime.utcnow()
+        sensitivity_level.updated_time = datetime.now(timezone.utc)
 
         db.session.commit()
 

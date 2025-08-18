@@ -1,7 +1,7 @@
 # initial_data/17_static_sensitivity_levels.py
 
 from modules.data_items.models import StaticSensitivityLevel
-from datetime import datetime
+from datetime import datetime, timezone
 
 def insert_data(db):
     """
@@ -146,8 +146,8 @@ def insert_data(db):
                 data_name=level_data["data_name"],
                 description=level_data["description"],
                 sensitivity_level=level_data["sensitivity_level"],
-                created_time=datetime.utcnow(),
-                updated_time=datetime.utcnow()
+                created_time=datetime.now(timezone.utc),
+                updated_time=datetime.now(timezone.utc)
             )
             
             db.session.add(new_level)

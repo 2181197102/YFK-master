@@ -4,7 +4,7 @@
 提供患者病历、医生病历等相关数据的管理接口
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from flask import Blueprint, request, current_app
@@ -17,7 +17,7 @@ from modules.medical_institutions.models import (
     MedicalRecordDataItem,
     DoctorMedicalRecord
 )
-from modules.data_management.models import DiseaseDataItem, ICD10Code
+from modules.data_management.models import ICD10Code
 from utils.extensions import db
 from modules.auth.models import User
 from modules.auth.decorators import role_required
@@ -110,7 +110,7 @@ def create_patient_record():
             return error_response("患者用户不存在", 400)
 
         # 生成病历号
-        record_id = f"rec_{data['patient_id_num']}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        record_id = f"rec_{data['patient_id_num']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
 
         # 创建新病历
         record = PatientMedicalRecord(
@@ -119,8 +119,8 @@ def create_patient_record():
             patient_name=data["patient_name"],
             patient_sex=data["patient_sex"],
             doctor_code=data["doctor_code"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         db.session.add(record)
@@ -217,11 +217,11 @@ def create_medical_record_disease():
 
         # 创建新的疾病诊断记录
         disease_record = MedicalRecordDisease(
-            id=f"mrd_{data['medical_record_num']}_{data['disease_code']}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            id=f"mrd_{data['medical_record_num']}_{data['disease_code']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
             medical_record_num=data["medical_record_num"],
             disease_code=data["disease_code"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         db.session.add(disease_record)
@@ -262,11 +262,11 @@ def create_medical_record_data_item():
 
         # 创建新的数据项记录
         data_item = MedicalRecordDataItem(
-            id=f"mdi_{data['medical_record_num']}_{data['associated_code']}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            id=f"mdi_{data['medical_record_num']}_{data['associated_code']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
             medical_record_num=data["medical_record_num"],
             associated_code=data["associated_code"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         # 设置数据项内容
@@ -320,14 +320,14 @@ def create_doctor_medical_record():
 
         # 创建新的医生-病历关联
         doctor_record = DoctorMedicalRecord(
-            id=f"dmr_{data['doctor_code']}_{data['medical_record_num']}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            id=f"dmr_{data['doctor_code']}_{data['medical_record_num']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
             doctor_name=data["doctor_name"],
             doctor_code=data["doctor_code"],
             patient_name=data["patient_name"],
             patient_id_num=data["patient_id_num"],
             medical_record_num=data["medical_record_num"],
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow()
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc)
         )
 
         db.session.add(doctor_record)

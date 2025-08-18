@@ -1,5 +1,5 @@
 # modules/user_management/routes.py
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, request, current_app
 from flask_jwt_extended import jwt_required
@@ -282,7 +282,7 @@ def update_user(user_id):
                         )
                     )
 
-        user.updated_time = datetime.utcnow()
+        user.updated_time = datetime.now(timezone.utc)
         db.session.commit()
 
         return success_response({"user": user.to_dict()}, "用户更新成功")
@@ -381,7 +381,7 @@ def update_role(role_id):
 
         role.role_name = data.get("role_name", role.role_name)
         role.description = data.get("description", role.description)
-        role.updated_time = datetime.utcnow()
+        role.updated_time = datetime.now(timezone.utc)
         db.session.commit()
 
         return success_response({"role": role.to_dict()}, "角色更新成功")
@@ -528,7 +528,7 @@ def update_group(group_id):
             group.group_name = data["group_name"]
 
         group.enable = data.get("enable", group.enable)
-        group.updated_time = datetime.utcnow()
+        group.updated_time = datetime.now(timezone.utc)
         db.session.commit()
 
         return success_response({"group": group.to_dict()}, "组更新成功")
@@ -696,7 +696,7 @@ def update_user_group_relation(user_id, group_id):
 
         relation.type = data.get("type", relation.type)
         relation.enable = data.get("enable", relation.enable)
-        relation.updated_time = datetime.utcnow()
+        relation.updated_time = datetime.now(timezone.utc)
         db.session.commit()
 
         return success_response(message="用户组关系更新成功")

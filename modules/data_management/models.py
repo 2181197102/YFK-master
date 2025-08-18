@@ -1,5 +1,5 @@
 from utils.extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -16,10 +16,10 @@ class AccessSuccessTracker(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ast_num_as = db.Column(db.Integer, default=0, comment='访问成功次数')
     ast_num_af = db.Column(db.Integer, default=0, comment='访问失败次数')
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow,
-                           onupdate=datetime.utcnow)
+    date_recorded = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
+    created_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
 
     # 业务计算
     def calculate_success_rate(self):
@@ -51,10 +51,10 @@ class OperationBehaviorTracker(db.Model):
     ob_a = db.Column(db.Float, default=0.3)
     ob_b = db.Column(db.Float, default=0.3)
     ob_c = db.Column(db.Float, default=0.4)
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
+    date_recorded = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
+    created_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                              onupdate=lambda: datetime.now(timezone.utc))
 
     def calculate_behavior_score(self):
         read_ops   = self.ob_num_view + self.ob_num_copy + self.ob_num_download
@@ -90,10 +90,10 @@ class DataSensitivityTracker(db.Model):
     ds_b = db.Column(db.Float, default=1.0)
     ds_c = db.Column(db.Float, default=1.0)
     ds_d = db.Column(db.Float, default=1.0)
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
+    date_recorded = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
+    created_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                              onupdate=lambda: datetime.now(timezone.utc))
 
     def calculate_sensitivity_score(self):
         return (self.ds_num1 * self.ds_a + self.ds_num2 * self.ds_b +
@@ -119,10 +119,10 @@ class AccessTimeTracker(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ap_num_ni = db.Column(db.Integer, default=0)
     ap_num_ui = db.Column(db.Integer, default=0)
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
+    date_recorded = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
+    created_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                              onupdate=lambda: datetime.now(timezone.utc))
 
     def calculate_normal_time_ratio(self):
         total = self.ap_num_ni + self.ap_num_ui
@@ -148,10 +148,10 @@ class AccessLocationTracker(db.Model):
     at_num_ad = db.Column(db.Integer, default=0) # 异常地点访问次数
     last_ip   = db.Column(db.String(45))
     ip_history = db.Column(db.Text)           # JSON 字符串
-    date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
-    created_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
-                              onupdate=datetime.utcnow)
+    date_recorded = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
+    created_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                              onupdate=lambda: datetime.now(timezone.utc))
 
     def calculate_normal_location_ratio(self):
         total = self.at_num_nd + self.at_num_ad
@@ -162,7 +162,7 @@ class AccessLocationTracker(db.Model):
             history = json.loads(self.ip_history) if self.ip_history else []
         except Exception:      # 若历史字段损坏，回退为空
             history = []
-        history.append({'ip': ip, 'timestamp': datetime.utcnow().isoformat()})
+        history.append({'ip': ip, 'timestamp': datetime.now(timezone.utc).isoformat()})
         history = history[-100:] if len(history) > 100 else history
         self.ip_history = json.dumps(history)
         self.last_ip = ip
@@ -202,9 +202,9 @@ class ICD10Code(db.Model):
     short_desc     = db.Column(db.String(256), nullable=True,  comment='简短描述 / 疾病名称')
 
     # 统一的审计字段
-    created_time   = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_time   = db.Column(db.DateTime, default=datetime.utcnow,
-                               onupdate=datetime.utcnow)
+    created_time   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_time   = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                               onupdate=lambda: datetime.now(timezone.utc))
 
     # ---------- 工具方法 ----------
     def to_dict(self):

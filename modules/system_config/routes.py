@@ -11,8 +11,9 @@
     - SystemConfig
 """
 # ────────────────────────────── 导入依赖 ──────────────────────────────
-from datetime import datetime
+from datetime import datetime, timezone
 import json
+from typing import Union
 
 from flask import Blueprint, current_app, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -65,7 +66,7 @@ def _config_to_dict(cfg: SystemConfig, *, show_sensitive=False):
     }
 
 
-def _find_config(identifier: str | int):
+def _find_config(identifier: Union[str, int]):
     """支持 id (int) 或 key (str)"""
     if isinstance(identifier, int) or identifier.isdigit():
         return SystemConfig.query.get(int(identifier))
@@ -137,8 +138,8 @@ def create_config():
             description=description,
             is_sensitive=is_sensitive,
             read_only=read_only,
-            created_time=datetime.utcnow(),
-            updated_time=datetime.utcnow(),
+            created_time=datetime.now(timezone.utc),
+            updated_time=datetime.now(timezone.utc),
         )
 
         if value_type == "password":
@@ -211,7 +212,7 @@ def update_config():
             else:
                 cfg.value = str(new_val)
 
-        cfg.updated_time = datetime.utcnow()
+        cfg.updated_time = datetime.now(timezone.utc)
         db.session.commit()
 
         return success_response(
