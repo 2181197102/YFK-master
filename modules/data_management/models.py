@@ -178,6 +178,58 @@ class AccessLocationTracker(db.Model):
             'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }
 
+# ------------------- IP白名单模型 -------------------
+class IPWhitelist(db.Model):
+    """IP白名单模型"""
+    __tablename__ = 'sys_ip_whitelist'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(45), nullable=False, unique=True, comment='IP地址')
+    description = db.Column(db.String(255), comment='IP描述')
+    is_active = db.Column(db.Boolean, default=True, comment='是否启用')
+    created_time = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, 
+                           onupdate=datetime.utcnow, comment='更新时间')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'ip_address': self.ip_address,
+            'description': self.description,
+            'is_active': self.is_active,
+            'created_time': self.created_time.isoformat() if self.created_time else None,
+            'updated_time': self.updated_time.isoformat() if self.updated_time else None
+        }
+
+
+# ------------------- 工作时间白名单模型 -------------------
+class WorkingTimeWhitelist(db.Model):
+    """工作时间白名单模型"""
+    __tablename__ = 'sys_working_time_whitelist'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer, nullable=False, comment='星期几(0-6, 0为周日)')
+    start_time = db.Column(db.Time, nullable=False, comment='开始时间')
+    end_time = db.Column(db.Time, nullable=False, comment='结束时间')
+    description = db.Column(db.String(255), comment='时间段描述')
+    is_active = db.Column(db.Boolean, default=True, comment='是否启用')
+    created_time = db.Column(db.DateTime, default=datetime.utcnow, comment='创建时间')
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, 
+                           onupdate=datetime.utcnow, comment='更新时间')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'day_of_week': self.day_of_week,
+            'start_time': self.start_time.strftime('%H:%M:%S') if self.start_time else None,
+            'end_time': self.end_time.strftime('%H:%M:%S') if self.end_time else None,
+            'description': self.description,
+            'is_active': self.is_active,
+            'created_time': self.created_time.isoformat() if self.created_time else None,
+            'updated_time': self.updated_time.isoformat() if self.updated_time else None
+        }
+
+
 # ------------------- ICD‑10 码表 -------------------
 class ICD10Code(db.Model):
     """
@@ -243,3 +295,6 @@ class ICD10Code(db.Model):
 
     def __repr__(self):
         return f"<ICD10Code {self.code} – {self.short_desc or self.description[:30]}>"
+
+
+

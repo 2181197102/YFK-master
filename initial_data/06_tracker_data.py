@@ -1,8 +1,11 @@
 # initial_data/06_tracker_data.py
 
 from modules.data_management.models import AccessSuccessTracker
-from modules.auth.models import  User
+from modules.auth.models import  User, UserRoleRelation
 from datetime import datetime, date, timedelta
+import random
+
+
 
 def insert_data(db):
     """
@@ -11,53 +14,53 @@ def insert_data(db):
     print("  - 正在插入初始追踪器数据 (AccessSuccessTracker)...")
 
     # 获取要关联的用户
-    admin_user = db.session.query(User).filter_by(username="admin").first()
-    patient_alice = db.session.query(User).filter_by(username="patient_alice").first()
+    users_with_roles = db.session.query(User, UserRoleRelation.role_id). \
+        join(UserRoleRelation, User.id == UserRoleRelation.user_id). \
+        filter(UserRoleRelation.role_id.between(1, 7)). \
+        all()
 
-    if not admin_user and not patient_alice:
-        print("    警告: 未找到可关联追踪器数据的用户。跳过追踪器数据插入。")
+    if not users_with_roles:
+        print("    警告: 未找到可关联追踪器数据的用户角色关系。跳过 UserAccessSuccessTracker 数据插入。")
         return
 
-    # 模拟过去几天的每日数据
     today = date.today()
-    for i in range(3): # 过去 3 天
+    # 处理每个用户的角色数据
+    for user, role_id in users_with_roles:
+        existing_tracker = db.session.query(AccessSuccessTracker).filter_by(
+            user_id=user.id
+        ).first()
+
+        i = random.randint(1, 3)
         record_date = today - timedelta(days=i)
 
-        if admin_user:
-            existing_tracker = db.session.query(AccessSuccessTracker).filter_by(
-                user_id=admin_user.id,
-                date_recorded=record_date
-            ).first()
-            if not existing_tracker:
-                new_tracker = AccessSuccessTracker(
-                    user_id=admin_user.id,
-                    ast_num_as=10 + i * 2,  # 示例: 10, 12, 14 成功访问
-                    ast_num_af=1 + i,      # 示例: 1, 2, 3 失败访问
-                    date_recorded=record_date,
-                    created_time=datetime.utcnow(),
-                    updated_time=datetime.utcnow()
-                )
-                db.session.add(new_tracker)
-                print(f"    已添加管理员用户在 {record_date} 的追踪器数据。")
-            else:
-                print(f"    管理员用户在 {record_date} 的追踪器数据已存在，跳过。")
+        if not existing_tracker:
+            # 根据角色ID确定访问统计数据
+            if role_id == 1:  # 患者
+                success = 5 + i
+                fail = 1
+                role_name = "患者"
+            elif 2 <= role_id <= 5:  # 医生（角色2-5）
+                success = 10 + i * 2
+                fail = 1+i
+                role_name = f"医生(角色{role_id})"
+            elif role_id == 6:  # 科研人员
+                success = 50 + i * 1
+                fail = 10 + i * 1
+                role_name = "科研人员"
+            elif role_id == 7:  # 管理者
+                success = 50 + i * 1
+                fail = 1
+                role_name = "管理者"
+            new_tracker = AccessSuccessTracker(
+                user_id = user.id,
+                ast_num_as=success,  # 访问成功次数
+                ast_num_af=fail,  # 访问失败次数
+                date_recorded=record_date,
+                created_time=datetime.utcnow(),
+                updated_time=datetime.utcnow()
+            )
+            db.session.add(new_tracker)
 
-        if patient_alice:
-            existing_tracker = db.session.query(AccessSuccessTracker).filter_by(
-                user_id=patient_alice.id,
-                date_recorded=record_date
-            ).first()
-            if not existing_tracker:
-                new_tracker = AccessSuccessTracker(
-                    user_id=patient_alice.id,
-                    ast_num_as=5 + i,      # 示例: 5, 6, 7 成功访问
-                    ast_num_af=0,          # 示例: 0, 0, 0 失败访问
-                    date_recorded=record_date,
-                    created_time=datetime.utcnow(),
-                    updated_time=datetime.utcnow()
-                )
-                db.session.add(new_tracker)
-                print(f"    已添加 patient_alice 用户在 {record_date} 的追踪器数据。")
-            else:
-                print(f"    patient_alice 用户在 {record_date} 的追踪器数据已存在，跳过。")
-    # No commit here; it's handled by db_test_and_init.py
+            print(f"    已添加用户 {user.id} ({role_name}) 的访问成功率追踪数据。")
+        else:
+            print(f"    用户 {user.id} 的访问成功率追踪数据已存在，跳过。")

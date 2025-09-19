@@ -8,7 +8,13 @@ USER_GROUP_MAP = [
     ("patient_bob",    "第一人民医院",  "base"),
     ("dr_smith",       "市中心医院",   "base"),
     ("researcher_eve", "大学附属医院", "base"),
+    ("researcher_fh", "大学附属医院", "base"),
     ("admin", "管理员测试医院", "base"),
+    ("zhangwei", "第一人民医院", "base"),
+    ("lina", "第一人民医院", "base"),
+    ("wangjiangguo", "市中心医院", "base"),
+    ("liumin", "市中心医院", "base"),
+    ("chenming", "大学附属医院", "base")
 ]
 
 def insert_data(db):

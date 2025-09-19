@@ -261,6 +261,7 @@ def verify_auth_password():
             return error_response("密码不能为空", 400)
 
         cfg = SystemConfig.query.filter_by(key="AUTH_PASSWORD").first()
+
         if not cfg:
             return not_found_response("未初始化授权密码")
 
