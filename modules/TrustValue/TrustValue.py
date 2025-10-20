@@ -21,12 +21,8 @@ class TrustElement:
 
         self.DS_Num1 = ds_data['num1']
         self.DS_Num2 = ds_data['num2']
-        self.DS_Num3 = ds_data['num3']
-        self.DS_Num4 = ds_data['num4']
         self.DS_a = 0.1
         self.DS_b = 0.4
-        self.DS_c = 0.2
-        self.DS_d = 0.3
 
         self.AP_NumNI = ap_data['num_ni']
         self.AP_NumUI = ap_data['num_ui']
@@ -71,9 +67,8 @@ class TrustValue:
         self.OB = 1 - OBWeightedSum / OBNumSum
 
     def DSValue(self):
-        DSWeightedSum = self.Trustelement.DS_Num1 * self.Trustelement.DS_a + self.Trustelement.DS_Num2 * self.Trustelement.DS_b + \
-                        self.Trustelement.DS_Num3 * self.Trustelement.DS_c + self.Trustelement.DS_Num4 * self.Trustelement.DS_d
-        DSNumSum = self.Trustelement.DS_Num1 + self.Trustelement.DS_Num2 + self.Trustelement.DS_Num3 + self.Trustelement.DS_Num4
+        DSWeightedSum = self.Trustelement.DS_Num1 * self.Trustelement.DS_a + self.Trustelement.DS_Num2 * self.Trustelement.DS_b
+        DSNumSum = self.Trustelement.DS_Num1 + self.Trustelement.DS_Num2
         self.DS = 1 - DSWeightedSum / DSNumSum
 
     def APValue(self):
@@ -130,9 +125,11 @@ class TrustValue:
         self.ASTValue()
         self.OBValue()
         self.DSValue()
+
         self.APValue()
         self.ATValue()
         self.SSValue2()
+
         # return 1.
         TrValue = self.AST * self.W[0] + self.OB * self.W[1] + self.DS * self.W[2] + \
                   self.AP * self.W[3] + self.AT * self.W[4] + self.SS * self.W[5]
@@ -143,10 +140,8 @@ class TrustValue:
     def GetSensitiveValue(self):
         ss_sum = 0
         for i in range(len(self.Trustelement.sensitive)):
-            ss_sum= ss_sum+ self.Trustelement.sensitive[i]
-            # print(self.Trustelement.sensitive[i])
-        # print(ss_sum)
-        return ss_sum/len(self.Trustelement.sensitive)
+            ss_sum= max(ss_sum,self.Trustelement.sensitive[i])
+        return ss_sum
 
 
 class TrustTreshold:

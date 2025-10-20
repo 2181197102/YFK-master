@@ -84,20 +84,15 @@ class DataSensitivityTracker(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('sys_users.id'), nullable=False)
     ds_num1 = db.Column(db.Integer, default=0)
     ds_num2 = db.Column(db.Integer, default=0)
-    ds_num3 = db.Column(db.Integer, default=0)
-    ds_num4 = db.Column(db.Integer, default=0)
     ds_a = db.Column(db.Float, default=1.0)
     ds_b = db.Column(db.Float, default=1.0)
-    ds_c = db.Column(db.Float, default=1.0)
-    ds_d = db.Column(db.Float, default=1.0)
     date_recorded = db.Column(db.Date, default=datetime.utcnow().date())
     created_time    = db.Column(db.DateTime, default=datetime.utcnow)
     updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
 
     def calculate_sensitivity_score(self):
-        return (self.ds_num1 * self.ds_a + self.ds_num2 * self.ds_b +
-                self.ds_num3 * self.ds_c + self.ds_num4 * self.ds_d)
+        return (self.ds_num1 * self.ds_a + self.ds_num2 * self.ds_b)
 
     def to_dict(self):
         return {
@@ -105,8 +100,6 @@ class DataSensitivityTracker(db.Model):
             'user_id': self.user_id,
             'level1_count': self.ds_num1,
             'level2_count': self.ds_num2,
-            'level3_count': self.ds_num3,
-            'level4_count': self.ds_num4,
             'sensitivity_score': self.calculate_sensitivity_score(),
             'date_recorded': self.date_recorded.isoformat() if self.date_recorded else None
         }

@@ -35,30 +35,24 @@ def insert_data(db):
            if role_id == 1:  # 患者
                ds_num1 = 10 + i
                ds_num2 = 2 + i
-               ds_num3 = 0
-               ds_num4 = 0
+
            elif 2 <= role_id <= 5:  # 医生（角色2-5）
                ds_num1 = 18 + i * 2
                ds_num2 = 12 + i
-               ds_num3 = 7 + i
-               ds_num4 = 1 + i
+
            elif role_id == 6:
                ds_num1 = 25 + i * 4
                ds_num2 = 15 + i * 2
-               ds_num3 = 10 + i
-               ds_num4 = 3
+
            else:
                ds_num1 = 20 + i * 3  # 敏感度级别1（最低）
                ds_num2 = 10 + i * 2
-               ds_num3 = 5 + i
-               ds_num4 = 2  # 敏感度级别4（最高）
+
 
            new_tracker = DataSensitivityTracker(
                 user_id=user.id,
                 ds_num1=ds_num1,
                 ds_num2=ds_num2,
-                ds_num3=ds_num3,
-                ds_num4=ds_num4,
                 date_recorded=record_date,
                 created_time=datetime.utcnow(),
                 updated_time=datetime.utcnow())

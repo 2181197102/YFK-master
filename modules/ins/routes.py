@@ -65,184 +65,59 @@ def get_record_data():
     """
     req_data = request.get_json()
     user_id = get_jwt_identity()
-    
+
     # 获取客户端IP并检查白名单
     client_ip = get_client_ip()
     is_whitelist_ip = is_ip_in_whitelist(client_ip)
-    
+
     # 检查工作时间
     is_working_time_flag = is_working_time()
-    
+
     # 更新访问追踪统计
     update_access_tracking(user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-    
+
     # 2. 提取并验证参数
     data_codes = req_data.get('data_code', [])
     nums = req_data.get('nums', 0)
     institutions = req_data.get('institutions', [])
-
+    # print(req_data)
     # 3. 多机构数据查询
     all_results = []
     for ins in institutions:
         model = INSTITUTION_MODEL_MAP[ins]
         ins_results = query_institution_data(model, data_codes, nums)
         all_results.extend(ins_results)
-    # print('*********************')
-    # print(all_results)
-    # 4. 返回查询结果
+
+    data_code_details = {}
+    if data_codes:  # 避免空列表查询
+        # 查询条件：data_code在请求的data_codes中
+        disease_data_records = Disease_data.query.filter(
+            Disease_data.data_code.in_(data_codes)
+        ).all()
+        # 整理为 {data_code: 详细信息字典} 的格式
+        for record in disease_data_records:
+            data_code_details[record.data_code] = record.to_dict()
+
+    sensitive = req_data.get('sensitive', 0)
+    Trustvalue = req_data.get('Trustvalue', 0)
+    # if is_single:
+    #     sensitive = sensitive + 0.2
+    # print(sensitive)
     return jsonify({
         "status": "success",
         "message": f"成功查询到{len(all_results)}条数据",
         "total_count": len(all_results),
         "institutions": institutions,
         "data_codes": data_codes,
+        "data_code_details": data_code_details,
         "requested_nums": nums,
         "client_ip": client_ip,
         "is_whitelist_ip": is_whitelist_ip,
         "is_working_time": is_working_time_flag,
-        "results": all_results
+        "results": all_results,
+        "sensitive": sensitive,
+        "Trustvalue": Trustvalue,
     }), 200
-
-
-@medical_record_bp.route('/get_mypatients', methods=['GET'])
-@jwt_required()
-def get_mypatient():
-    try:
-        # 获取当前用户ID
-        user_id = get_jwt_identity()
-        
-        # 获取客户端IP并检查白名单
-        client_ip = get_client_ip()
-        is_whitelist_ip = is_ip_in_whitelist(client_ip)
-        
-        # 检查工作时间
-        is_working_time_flag = is_working_time()
-        
-        # 更新访问追踪统计
-        update_access_tracking(user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-
-        # 查询用户信息获取姓名
-        user_info = User.query.filter_by(id=user_id).first()
-        if not user_info:
-            return jsonify({
-                'code': 404,
-                'msg': '用户不存在'
-            }), 404
-
-        doctor_name = user_info.name
-
-        # 查询用户所属机构
-        user_group = UserGroupRelation.query.filter_by(user_id=user_id).first()
-        if not user_group:
-            return jsonify({
-                'code': 403,
-                'msg': '未分配机构权限'
-            }), 403
-
-        ins = user_group.group_id
-
-        # 根据机构ID选择对应的模型
-        if ins == 1:
-            ins_record = ins1_record
-            ins_record_disease = ins1_record_disease
-            ins_record_data = ins1_record_data
-            ins_doctor_record = ins1_doctor_record
-        elif ins == 2:
-            ins_record = ins2_record
-            ins_record_disease = ins2_record_disease
-            ins_record_data = ins2_record_data
-            ins_doctor_record = ins2_doctor_record
-        elif ins == 3:
-            ins_record = ins3_record
-            ins_record_disease = ins3_record_disease
-            ins_record_data = ins3_record_data
-            ins_doctor_record = ins3_doctor_record
-        else:
-            return jsonify({
-                'code': 400,
-                'msg': '无效的机构ID'
-            }), 400
-
-        # 查询该医生名下的所有病历记录
-        doctor_records = ins_doctor_record.query.filter_by(doctor_name=doctor_name).all()
-        if not doctor_records:
-            return jsonify({
-                'code': 200,
-                'msg': '未查询到患者数据',
-                'data': []
-            })
-
-        # 处理患者数据
-        patients = []
-        for dr in doctor_records:
-            # 获取患者基本信息
-            patient_info = ins_record.query.filter_by(id_card=dr.patient_id_num).first()
-            if not patient_info:
-                continue
-
-            # 获取患者疾病信息
-            disease_info = ins_record_disease.query.filter_by(
-                medical_record_num=dr.medical_record_num
-            ).first()
-
-            # 获取患者数据项信息
-            data_info = ins_record_data.query.filter_by(
-                medical_record_num=dr.medical_record_num
-            ).first()
-
-            # 组装患者数据
-            patient_data = {
-                'medical_record_num': dr.medical_record_num,
-                'patient_name': dr.patient_name,
-                'patient_id_num': dr.patient_id_num,
-                'basic_info': {
-                    'name': patient_info.name,
-                    'age': patient_info.age,
-                    'gender': patient_info.gender,
-                    'doctor_code': patient_info.doctor_code
-                },
-                'disease_code': disease_info.disease_code if disease_info else None,
-                'record_timestamps': {
-                    'created_time': patient_info.created_time.isoformat() if patient_info.created_time else None,
-                    'updated_time': patient_info.updated_time.isoformat() if patient_info.updated_time else None
-                }
-            }
-            # print(patient_data)
-            # 添加数据项（如果存在）
-            if data_info:
-                patient_data['data_items'] = {
-                    'data_code1': data_info.data_code1,
-                    'data_code2': data_info.data_code2,
-                    'data_code3': data_info.data_code3,
-                    'data_code4': data_info.data_code4,
-                    'data_code5': data_info.data_code5,
-                    'data_code6': data_info.data_code6,
-                    'data_code7': data_info.data_code7,
-                    'data_code8': data_info.data_code8,
-                    'data_code9': data_info.data_code9
-                }
-
-            patients.append(patient_data)
-
-        return jsonify({
-            'code': 200,
-            'msg': '查询成功',
-            'client_ip': client_ip,
-            'is_whitelist_ip': is_whitelist_ip,
-            'is_working_time': is_working_time_flag,
-            'data': {
-                'doctor_name': doctor_name,
-                'institution_id': ins,
-                'patient_count': len(patients),
-                'patients': patients
-            }
-        })
-
-    except Exception as e:
-        return jsonify({
-            'code': 500,
-            'msg': f'查询失败: {str(e)}'
-        }), 500
 
 
 # 机构模型映射
@@ -277,17 +152,17 @@ def get_patient(user_id):
     """
     try:
         current_user_id = get_jwt_identity()
-        
+
         # 获取客户端IP并检查白名单
         client_ip = get_client_ip()
         is_whitelist_ip = is_ip_in_whitelist(client_ip)
-        
+
         # 检查工作时间
         is_working_time_flag = is_working_time()
-        
+
         # 更新访问追踪统计
         update_access_tracking(current_user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-        
+
         accessible_ins_ids = [1, 2, 3]
 
         # 2. 遍历所有可访问的机构查询记录
@@ -402,11 +277,11 @@ def get_patient(user_id):
 
 
 @medical_record_bp.route('/disease-data-codes', methods=['GET'])
-def get_disease_data_codes():
+def get_disease_data_rows():
     """
-    获取每个disease_code对应的所有data_code
+    获取每个disease_code对应的所有完整行数据
     支持可选参数disease_code进行过滤，例如:
-    /disease-data-codes?disease_code=A000&disease_code=B159
+    /disease-data-rows?disease_code=A000&disease_code=B159
     """
     # 获取查询参数中的disease_code列表
     disease_codes = request.args.getlist('disease_code')
@@ -421,25 +296,69 @@ def get_disease_data_codes():
     # 执行查询
     results = query.all()
 
-    # 整理结果：按disease_code分组，收集对应的data_code
+    # 整理结果：按disease_code分组，收集对应的完整行数据
     disease_data_map = defaultdict(list)
     for item in results:
-        # 确保每个data_code在列表中唯一
-        if item.data_code not in disease_data_map[item.disease_code]:
-            disease_data_map[item.disease_code].append(item.data_code)
-    # print(disease_data_map)
-    # 转换为有序字典并排序
+        # 将对象转换为字典（假设模型类有to_dict()方法，若无则手动构造）
+        row_data = item.to_dict() if hasattr(item, 'to_dict') else {
+            column.name: getattr(item, column.name)
+            for column in item.__table__.columns
+        }
+        disease_data_map[item.disease_code].append(row_data)
+
+    # 转换为有序字典并排序（按disease_code排序）
     sorted_result = {
-        disease_code: sorted(data_codes)
-        for disease_code, data_codes in sorted(disease_data_map.items())
+        disease_code: rows
+        for disease_code, rows in sorted(disease_data_map.items())
     }
-    # print(sorted_result)
+
+    # 计算总记录数
+    total_rows = sum(len(rows) for rows in sorted_result.values())
+
     return jsonify({
         'status': 'success',
         'data': sorted_result,
-        'message': f"共找到{len(sorted_result)}个疾病代码对应的{sum(len(v) for v in sorted_result.values())}个数据项代码"
+        'message': f"共找到{len(sorted_result)}个疾病代码，对应{total_rows}行数据"
     }), 200
 
+# @medical_record_bp.route('/disease-data-codes', methods=['GET'])
+# def get_disease_data_codes():
+#     """
+#     获取每个disease_code对应的所有data_code
+#     支持可选参数disease_code进行过滤，例如:
+#     /disease-data-codes?disease_code=A000&disease_code=B159
+#     """
+#     # 获取查询参数中的disease_code列表
+#     disease_codes = request.args.getlist('disease_code')
+#
+#     # 构建查询
+#     query = Disease_data.query
+#
+#     # 如果指定了disease_code参数，则过滤
+#     if disease_codes:
+#         query = query.filter(Disease_data.disease_code.in_(disease_codes))
+#
+#     # 执行查询
+#     results = query.all()
+#
+#     # 整理结果：按disease_code分组，收集对应的data_code
+#     disease_data_map = defaultdict(list)
+#     for item in results:
+#         # 确保每个data_code在列表中唯一
+#         if item.data_code not in disease_data_map[item.disease_code]:
+#             disease_data_map[item.disease_code].append(item.data_code)
+#     # print(disease_data_map)
+#     # 转换为有序字典并排序
+#     sorted_result = {
+#         disease_code: sorted(data_codes)
+#         for disease_code, data_codes in sorted(disease_data_map.items())
+#     }
+#     # print(sorted_result)
+#     return jsonify({
+#         'status': 'success',
+#         'data': sorted_result,
+#         'message': f"共找到{len(sorted_result)}个疾病代码对应的{sum(len(v) for v in sorted_result.values())}个数据项代码"
+#     }), 200
 
 
 def keep_first_occurrence(lst):
@@ -471,10 +390,10 @@ def is_ip_in_whitelist(client_ip: str) -> bool:
     try:
         # 查询所有启用的IP白名单
         whitelist_ips = IPWhitelist.query.filter_by(is_active=True).all()
-        
+
         if not whitelist_ips:
             return True  # 如果没有配置白名单，默认允许所有IP
-        
+
         # 检查IP是否匹配
         for whitelist_ip in whitelist_ips:
             try:
@@ -489,7 +408,7 @@ def is_ip_in_whitelist(client_ip: str) -> bool:
             except (ipaddress.AddressValueError, ValueError):
                 # IP格式错误，跳过
                 continue
-        
+
         return False
     except Exception:
         # 发生异常时默认允许访问
@@ -501,13 +420,13 @@ def is_working_time() -> bool:
     try:
         # 查询所有启用的工作时间白名单
         working_times = WorkingTimeWhitelist.query.filter_by(is_active=True).all()
-        
+
         if not working_times:
             return True  # 如果没有配置工作时间，默认允许所有时间
-        
+
         current_time = datetime.now().time()
         current_weekday = datetime.now().weekday()  # 0=Monday, 6=Sunday
-        
+
         # 检查当前时间是否在任何一个工作时间段内
         for working_time in working_times:
             # 检查星期几是否匹配
@@ -515,7 +434,7 @@ def is_working_time() -> bool:
                 # 检查时间是否在范围内
                 if working_time.start_time <= current_time <= working_time.end_time:
                     return True
-        
+
         return False
     except Exception:
         # 发生异常时默认允许访问
@@ -539,7 +458,7 @@ def update_access_tracking(user_id: int, client_ip: str, is_working_time_flag: b
                 ap_record.ap_num_ni += 1
             else:
                 ap_record.ap_num_ui += 1
-        
+
         # 更新访问IP统计
         at_record = AccessLocationTracker.query.filter_by(user_id=user_id).first()
         if not at_record:
@@ -556,11 +475,11 @@ def update_access_tracking(user_id: int, client_ip: str, is_working_time_flag: b
                 at_record.at_num_nd += 1
             else:
                 at_record.at_num_ad += 1
-            
+
             at_record.add_ip_to_history(client_ip)
-        
+
         db.session.commit()
-        
+
     except Exception as e:
         db.session.rollback()
         # 记录错误但不影响主流程
@@ -571,19 +490,20 @@ def update_access_tracking(user_id: int, client_ip: str, is_working_time_flag: b
 @jwt_required()
 def get_sensitive_data():
     # 获取请求数据
+
     data = request.get_json()
     user_id = get_jwt_identity()
-    
+
     # 获取客户端IP并检查白名单
     client_ip = get_client_ip()
     is_whitelist_ip = is_ip_in_whitelist(client_ip)
-    
+
     # 检查工作时间
     is_working_time_flag = is_working_time()
-    
+
     # 更新访问追踪统计
     update_access_tracking(user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-    
+
     # 验证输入格式
     if not isinstance(data, dict):
         return jsonify({"message": "输入格式错误，应为JSON对象"}), 400
@@ -652,9 +572,7 @@ def get_sensitive_data():
     ds = DataSensitivityTracker.query.filter_by(user_id=user_id).first()
     ds_data = {
         'num1': ds.ds_num1 if ds else 0,
-        'num2': ds.ds_num2 if ds else 0,
-        'num3': ds.ds_num3 if ds else 0,
-        'num4': ds.ds_num4 if ds else 0
+        'num2': ds.ds_num2 if ds else 0
     }
 
     # 访问时间
@@ -687,13 +605,9 @@ def get_sensitive_data():
     db.session.add(ast)
     # 根据sensitive_results更新DataSensitivityTracker
     for val in sensitive_results:
-        if val in (0.6, 0.8):
-            ds.ds_num4 += 1
-        elif val == 0.4:
-            ds.ds_num3 += 1
-        elif val == 0.2:
+        if val == 0.5:
             ds.ds_num2 += 1
-        elif val == 0.1:
+        elif val == 0.3:
             ds.ds_num1 += 1
     db.session.add(ds)
     db.session.commit()
@@ -710,6 +624,5 @@ def get_sensitive_data():
         'access_period': ap_data,
         'access_location': at_data,
         'Trustvalue': value,
-        'sensitive': sensitive
+        'sensitive': sensitive,
     }), 200
-

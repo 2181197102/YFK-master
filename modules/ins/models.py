@@ -672,7 +672,11 @@ class Disease_data(db.Model):
     disease_code = db.Column(db.String(18), unique=False, nullable=False)
     data_code = db.Column(db.String(50), unique=False, nullable=False)
     similar = db.Column(db.String(18), unique=False, nullable=False)
-    sensitive = db.Column(db.String(18), unique=False, nullable=False)
+    sensitive = db.Column(db.Integer(), unique=False, nullable=False)
+    data_type = db.Column(db.Integer(), unique=False, nullable=False)
+    security_level = db.Column(db.String(18), unique=False, nullable=False)
+    security_category = db.Column(db.String(18), unique=False, nullable=False)
+    remark = db.Column(db.String(18), unique=False, nullable=False)
     created_time    = db.Column(db.DateTime, default=datetime.utcnow)
     updated_time    = db.Column(db.DateTime, default=datetime.utcnow,
                               onupdate=datetime.utcnow)
@@ -684,4 +688,8 @@ class Disease_data(db.Model):
             'data_code': self.data_code,
             'similar': self.similar,
             'sensitive': self.sensitive,
+            'data_type': self.data_type,
+            'security_level': self.security_level,
+            'security_category': self.security_category,
+            'remark': self.remark,
         }
