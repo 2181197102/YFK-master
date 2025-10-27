@@ -14,7 +14,8 @@ USER_ROLE_MAP = [
     ("lina", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
     ("wangjiangguo", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
     ("liumin", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
-    ("chenming", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"])
+    ("chenming", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
+    ("wumin", ["PATIENT"])
 ]
 
 def insert_data(db):

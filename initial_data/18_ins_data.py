@@ -208,38 +208,13 @@ def get_data_item(ins_record_data, i,medical_record_num):
     )
     return data_record
 
-doctor1 = [["张伟", "DR-2023001"],
-["李娜", "DR-2023002"],
-["王芳", "DR-2023003"],
-["刘伟", "DR-2023004"],
-["陈明", "DR-2023005"],
-["杨丽", "DR-2023006"],
-["赵静", "DR-2023007"],
-["孙颖", "DR-2023008"],
-["周强", "DR-2023009"],
-["吴敏", "DR-2023010"]]
+doctor1 = [["zhangwei", "110101198501010007"],
+["lina", "110101198501010008"]]
 
-doctor2 = [["郑华", "DR-2023011"],
-["钱磊", "DR-2023012"],
-["冯佳", "DR-2023013"],
-["陈杰", "DR-2023014"],
-["杨琳", "DR-2023015"],
-["黄浩", "DR-2023016"],
-["朱燕", "DR-2023017"],
-["胡军", "DR-2023018"],
-["马丽", "DR-2023019"],
-["郭明", "DR-2023020"]]
+doctor2 = [["wangjiangguo", "110101198501010009"],
+["liumin", "110101198501010010"]]
 
-doctor3 = [["林颖", "DR-2023021"],
-["高伟", "DR-2023022"],
-["罗静", "DR-2023023"],
-["梁刚", "DR-2023024"],
-["谢芳", "DR-2023025"],
-["宋磊", "DR-2023026"],
-["唐敏", "DR-2023027"],
-["许强", "DR-2023028"],
-["邓娜", "DR-2023029"],
-["韩华", "DR-2023030"]]
+doctor3 = [["chenming", "110101198501010011"]]
 
 patientlist=[["张明", "男", "110101199001011234", 34],
 ["李娜", "女", "120101199502156789", 29],
@@ -454,31 +429,6 @@ MEDICAL_RECORD_EXAMPLES = [
     "I10", "I25.1", "E10", "J44"
 ]
 
-# columns_to_select =['HYP_HX',
-#                         'CRP',
-#                         'BIO_FBG',
-#                         'BIO_PBG',
-#                         'SHS_EXP',
-#                         'HR',
-#                         'BP',
-#                         'BG',
-#                         'BL_LIPID',
-#                         'EXE_FREQ_WK',
-#                         'INS_DOS_PER',
-#                         'O2_DUR',
-#                         'DRUNK_MARK',
-#                         'STAP_INTAKE_D',
-#                         'SMK_START_AGE',
-#                         'SMK_QUIT_AGE',
-#                         'PFT_TLC',
-#                         'PFT_FRC',
-#                         'PFT_DLCO'
-#                         ]
-#
-# MEDICAL_RECORD_EXAMPLES = [
-#     "I10", "I25.1", "E10", "J44"
-# ]
-# data_list = read_xlsx_file(excel_path, columns_to_select)
 
 idxlist = [1,1,1]
 df_chd = pd.read_csv(
@@ -527,7 +477,7 @@ def insert_data(db):
             ins_doctor_record = ins2_doctor_record
             doctor = random.choice(doctor2)
 
-        if i ==3:
+        if i == 3:
             idx = idxlist[i-1]
             idxlist[i-1] = idxlist[i-1] + 1
             ins_record = ins3_record

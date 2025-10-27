@@ -13,10 +13,17 @@ import ipaddress
 medical_record_bp = Blueprint('medical_record', __name__)
 
 # 机构与数据表模型的映射关系
-INSTITUTION_MODEL_MAP: Dict[str, Type[ins1_record_data | ins2_record_data | ins3_record_data]] = {
+INSTITUTION_RECORD_DATA: Dict[str, Type[ins1_record_data | ins2_record_data | ins3_record_data]] = {
     'ins1': ins1_record_data,
     'ins2': ins2_record_data,
     'ins3': ins3_record_data
+}
+
+# 机构与数据表模型的映射关系
+INSTITUTION_RECORD: Dict[str, Type[ins1_record | ins2_record | ins3_record]] = {
+    'ins1': ins1_record,
+    'ins2': ins2_record,
+    'ins3': ins3_record
 }
 
 
@@ -28,26 +35,56 @@ def get_valid_fields(model: Type[ins1_record_data]) -> List[str]:
 
 
 def query_institution_data(
-        model: Type[ins1_record_data],
+        model_record_data, model_record,
         data_codes: List[str],
         nums: int
 ) -> List[Dict]:
-    """查询指定机构表中的数据并格式化结果"""
+    """查询指定机构表中的数据并格式化结果，包含关联的model_record信息"""
     # 查询前nums条数据，按ID排序确保结果一致性
-    records = model.query.order_by(model.id).limit(nums).all()
-    # print(records)
-    # 格式化结果，只包含需要的字段
+    records = model_record_data.query.order_by(model_record_data.id).limit(nums).all()
+
+    # 提取所有model_record_data的id，用于批量查询关联的model_record（优化查询效率）
+    data_ids = [record.id for record in records]
+
+    # 批量查询model_record中匹配的记录，减少数据库交互
+    # 假设model_record的id字段与model_record_data的id字段直接关联
+    model_records = model_record.query.filter(model_record.id.in_(data_ids)).all()
+
+    # 将model_record结果转为字典，便于快速查询（key为id）
+    model_record_map = {rec.id: rec for rec in model_records}
+
+    # 格式化结果，包含需要的字段及关联信息
     result = []
     for record in records:
+        # 获取关联的model_record
+        related_model_rec = model_record_map.get(record.id)
+        print(related_model_rec)
+        # 基础信息（机构数据）
         record_data = {
             'medical_record_num': record.medical_record_num,
-            'institution': model.__tablename__.split('_')[0]  # 提取机构标识
+            'institution': model_record_data.__tablename__.split('_')[0],  # 提取机构标识
+            # 初始化关联字段为None（若未匹配到）
+            'age': None,
+            'gender': None,
+            'id_card': None,
+            'doctor_code': None
         }
+        # 如果找到关联的model_record，补充字段
+        if related_model_rec:
+            record_data.update({
+                'age': related_model_rec.age,
+                'gender': related_model_rec.gender,
+                'id_card': related_model_rec.id_card,
+                'doctor_code': related_model_rec.doctor_code
+            })
+
         # 添加用户选择的字段
         for code in data_codes:
             if hasattr(record, code):
                 record_data[code] = getattr(record, code)
+
         result.append(record_data)
+
     return result
 
 
@@ -84,8 +121,9 @@ def get_record_data():
     # 3. 多机构数据查询
     all_results = []
     for ins in institutions:
-        model = INSTITUTION_MODEL_MAP[ins]
-        ins_results = query_institution_data(model, data_codes, nums)
+        model_record_data = INSTITUTION_RECORD_DATA[ins]
+        model_record = INSTITUTION_RECORD[ins]
+        ins_results = query_institution_data(model_record_data,model_record, data_codes, nums)
         all_results.extend(ins_results)
 
     data_code_details = {}
@@ -126,154 +164,226 @@ INSTITUTION_MODELS = {
         'record': ins1_record,
         'record_disease': ins1_record_disease,
         'record_data': ins1_record_data,
-        'name': '机构1'
+        'doctor_record': ins1_doctor_record
     },
     2: {
         'record': ins2_record,
         'record_disease': ins2_record_disease,
         'record_data': ins2_record_data,
-        'name': '机构2'
+        'doctor_record': ins2_doctor_record
     },
     3: {
         'record': ins3_record,
         'record_disease': ins3_record_disease,
         'record_data': ins3_record_data,
-        'name': '机构3'
+        'doctor_record': ins3_doctor_record
     }
 }
 
 
-@medical_record_bp.route("/get_patient/<user_id>", methods=["GET"])
+# @medical_record_bp.route("/get_patient", methods=["GET"])
+# @jwt_required()
+# def get_patient(user_id):
+#     """
+#     根据患者身份证号查询病历信息
+#     user_id: 患者的身份证号
+#     """
+#     try:
+#         current_user_id = get_jwt_identity()
+#
+#         # 获取客户端IP并检查白名单
+#         client_ip = get_client_ip()
+#         is_whitelist_ip = is_ip_in_whitelist(client_ip)
+#
+#         # 检查工作时间
+#         is_working_time_flag = is_working_time()
+#
+#         # 更新访问追踪统计
+#         update_access_tracking(current_user_id, client_ip, is_working_time_flag, is_whitelist_ip)
+#
+#         accessible_ins_ids = [1, 2, 3]
+#
+#         # 2. 遍历所有可访问的机构查询记录
+#         all_institution_records = []
+#         for ins_id in accessible_ins_ids:
+#             if ins_id not in INSTITUTION_MODELS:
+#                 continue  # 跳过无效机构ID
+#
+#             models = INSTITUTION_MODELS[ins_id]
+#             ins_name = models['name']
+#
+#             # 3. 第一步：通过身份证号在病历表中查询记录，获取medical_record_num关联
+#             # 注意：根据数据模型，insX_record表中没有直接的medical_record_num字段
+#             # 这里通过insX_doctor_record表关联获取病历号（因为只有该表有medical_record_num）
+#             # 先查询该机构中该患者的医生关联记录
+#             doctor_record_model = {
+#                 1: ins1_doctor_record,
+#                 2: ins2_doctor_record,
+#                 3: ins3_doctor_record
+#             }.get(ins_id)
+#
+#             if not doctor_record_model:
+#                 continue
+#
+#             # 通过患者身份证号查询医生-病历关联记录，获取medical_record_num
+#             doctor_records = doctor_record_model.query.filter_by(
+#                 patient_id_num=user_id
+#             ).all()
+#
+#             if not doctor_records:
+#                 continue  # 该机构无此患者的关联记录
+#
+#             # 4. 处理每条病历记录
+#             ins_records = []
+#             for dr in doctor_records:
+#                 medical_record_num = dr.medical_record_num
+#
+#                 # 4.1 查询患者基本信息（insX_record）
+#                 patient_basic = models['record'].query.filter_by(
+#                     id_card=user_id
+#                 ).first()
+#
+#                 # 4.2 查询病种信息（insX_record_disease）
+#                 disease_info = models['record_disease'].query.filter_by(
+#                     medical_record_num=medical_record_num
+#                 ).first()
+#
+#                 # 4.3 查询数据项信息（insX_record_data）
+#                 data_info = models['record_data'].query.filter_by(
+#                     medical_record_num=medical_record_num
+#                 ).first()
+#
+#                 # 4.4 查询疾病对应的数据项编码
+#                 related_data_codes = []
+#                 if disease_info:
+#                     related_data = Disease_data.query.filter_by(
+#                         disease_code=disease_info.disease_code
+#                     ).all()
+#                     related_data_codes = [item.data_code for item in related_data]
+#
+#                 # 组装记录信息
+#                 ins_records.append({
+#                     "medical_record_num": medical_record_num,
+#                     "patient_basic": patient_basic.to_dict() if patient_basic else None,
+#                     "disease_info": disease_info.to_dict() if disease_info else None,
+#                     "data_info": data_info.to_dict() if data_info else None,
+#                     "related_data_codes": related_data_codes,
+#                     "doctor_info": {
+#                         "doctor_name": dr.doctor_name,
+#                         "doctor_code": dr.doctor_code
+#                     },
+#                     "record_time": {
+#                         "created_time": dr.created_time.isoformat() if dr.created_time else None,
+#                         "updated_time": dr.updated_time.isoformat() if dr.updated_time else None
+#                     }
+#                 })
+#
+#             # 5. 汇总该机构的记录
+#             all_institution_records.append({
+#                 "institution_id": ins_id,
+#                 "institution_name": ins_name,
+#                 "record_count": len(ins_records),
+#                 "records": ins_records
+#             })
+#
+#         # 6. 返回结果
+#         if not all_institution_records:
+#             return jsonify({
+#                 "code": 200,
+#                 "msg": "未查询到该患者的任何病历记录",
+#                 "data": []
+#             })
+#
+#         return jsonify({
+#             "code": 200,
+#             "client_ip": client_ip,
+#             "is_whitelist_ip": is_whitelist_ip,
+#             "is_working_time": is_working_time_flag,
+#             "data": {
+#                 "patient_id_card": user_id,
+#                 "total_institutions": len(all_institution_records),
+#                 "total_records": sum(ins["record_count"] for ins in all_institution_records),
+#                 "institution_records": all_institution_records
+#             }
+#         })
+#
+#     except SQLAlchemyError as e:
+#         db.session.rollback()
+#         return jsonify({"code": 500, "msg": f"数据库错误: {str(e)}"}), 500
+#     except Exception as e:
+#         return jsonify({"code": 500, "msg": f"服务器错误: {str(e)}"}), 500
+#
+
+@medical_record_bp.route("/get_patient", methods=["GET"])
 @jwt_required()
-def get_patient(user_id):
-    """
-    根据患者身份证号查询病历信息
-    user_id: 患者的身份证号
-    """
-    try:
-        current_user_id = get_jwt_identity()
+def get_patient():
 
-        # 获取客户端IP并检查白名单
-        client_ip = get_client_ip()
-        is_whitelist_ip = is_ip_in_whitelist(client_ip)
+    user_id = get_jwt_identity()
 
-        # 检查工作时间
-        is_working_time_flag = is_working_time()
-
-        # 更新访问追踪统计
-        update_access_tracking(current_user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-
-        accessible_ins_ids = [1, 2, 3]
-
-        # 2. 遍历所有可访问的机构查询记录
-        all_institution_records = []
-        for ins_id in accessible_ins_ids:
-            if ins_id not in INSTITUTION_MODELS:
-                continue  # 跳过无效机构ID
-
-            models = INSTITUTION_MODELS[ins_id]
-            ins_name = models['name']
-
-            # 3. 第一步：通过身份证号在病历表中查询记录，获取medical_record_num关联
-            # 注意：根据数据模型，insX_record表中没有直接的medical_record_num字段
-            # 这里通过insX_doctor_record表关联获取病历号（因为只有该表有medical_record_num）
-            # 先查询该机构中该患者的医生关联记录
-            doctor_record_model = {
-                1: ins1_doctor_record,
-                2: ins2_doctor_record,
-                3: ins3_doctor_record
-            }.get(ins_id)
-
-            if not doctor_record_model:
-                continue
-
-            # 通过患者身份证号查询医生-病历关联记录，获取medical_record_num
-            doctor_records = doctor_record_model.query.filter_by(
-                patient_id_num=user_id
-            ).all()
-
-            if not doctor_records:
-                continue  # 该机构无此患者的关联记录
-
-            # 4. 处理每条病历记录
-            ins_records = []
-            for dr in doctor_records:
-                medical_record_num = dr.medical_record_num
-
-                # 4.1 查询患者基本信息（insX_record）
-                patient_basic = models['record'].query.filter_by(
-                    id_card=user_id
-                ).first()
-
-                # 4.2 查询病种信息（insX_record_disease）
-                disease_info = models['record_disease'].query.filter_by(
-                    medical_record_num=medical_record_num
-                ).first()
-
-                # 4.3 查询数据项信息（insX_record_data）
-                data_info = models['record_data'].query.filter_by(
-                    medical_record_num=medical_record_num
-                ).first()
-
-                # 4.4 查询疾病对应的数据项编码
-                related_data_codes = []
-                if disease_info:
-                    related_data = Disease_data.query.filter_by(
-                        disease_code=disease_info.disease_code
-                    ).all()
-                    related_data_codes = [item.data_code for item in related_data]
-
-                # 组装记录信息
-                ins_records.append({
-                    "medical_record_num": medical_record_num,
-                    "patient_basic": patient_basic.to_dict() if patient_basic else None,
-                    "disease_info": disease_info.to_dict() if disease_info else None,
-                    "data_info": data_info.to_dict() if data_info else None,
-                    "related_data_codes": related_data_codes,
-                    "doctor_info": {
-                        "doctor_name": dr.doctor_name,
-                        "doctor_code": dr.doctor_code
-                    },
-                    "record_time": {
-                        "created_time": dr.created_time.isoformat() if dr.created_time else None,
-                        "updated_time": dr.updated_time.isoformat() if dr.updated_time else None
-                    }
-                })
-
-            # 5. 汇总该机构的记录
-            all_institution_records.append({
-                "institution_id": ins_id,
-                "institution_name": ins_name,
-                "record_count": len(ins_records),
-                "records": ins_records
-            })
-
-        # 6. 返回结果
-        if not all_institution_records:
-            return jsonify({
-                "code": 200,
-                "msg": "未查询到该患者的任何病历记录",
-                "data": []
-            })
-
+    if not user_id:
         return jsonify({
-            "code": 200,
-            "client_ip": client_ip,
-            "is_whitelist_ip": is_whitelist_ip,
-            "is_working_time": is_working_time_flag,
-            "data": {
-                "patient_id_card": user_id,
-                "total_institutions": len(all_institution_records),
-                "total_records": sum(ins["record_count"] for ins in all_institution_records),
-                "institution_records": all_institution_records
-            }
-        })
+            "code": 400,
+            "msg": "参数错误：请传入有效的user_id（整数）",
+            "data": None
+        }), 400
 
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({"code": 500, "msg": f"数据库错误: {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"code": 500, "msg": f"服务器错误: {str(e)}"}), 500
+        # -------------------------- 2. 根据user_id查询sys_users表，获取id_card --------------------------
+    user = User.query.filter_by(id=user_id, enable=True).first()
+    if not user:
+        return jsonify({
+            "code": 404,
+            "msg": f"未找到ID为{user_id}的有效用户",
+            "data": None
+        }), 404
+    user_id_card = user.id_card  # 提取用户身份证号
+
+    # -------------------------- 3. 根据user_id查询sys_user_group_relation表，获取group_id --------------------------
+    group_relations = UserGroupRelation.query.filter_by(
+        user_id=user_id,
+        enable=True
+    ).all()
+    if not group_relations:
+        return jsonify({
+            "code": 404,
+            "msg": f"用户{user_id}未关联任何有效组",
+            "data": None
+        }), 404
+    # 提取去重的group_id（避免同一组重复查询）
+    group_ids = list({relation.group_id for relation in group_relations})
+
+    # -------------------------- 4. 根据group_id查询对应ins{group_id}_doctor_record表 --------------------------
+    all_medical_records = []
+    for group_id in group_ids:
+        # 4.1 获取当前组对应的医生病历模型（无则跳过）
+        doctor_record_model = INSTITUTION_MODELS.get(group_id)['doctor_record']
+
+        if not doctor_record_model:
+            continue  # 若group_id无对应ins表，跳过该组
+
+        # 4.2 用身份证号（patient_id_num）查询该机构的所有病历记录
+        medical_records = doctor_record_model.query.filter_by(
+            doctor_code=user_id_card
+        ).all()
+
+        # 4.3 用模型自带的to_dict()格式化数据（复用用户定义的方法）
+        formatted_records = [record.to_dict() for record in medical_records]
+        all_medical_records.extend(formatted_records)
+
+    # -------------------------- 5. 返回最终查询结果 --------------------------
+    return jsonify({
+        "code": 200,
+        "msg": "查询成功" if all_medical_records else "未查询到该用户的病历记录",
+        "data": {
+            "user_info": {
+                "user_id": user_id,
+                "id_card": user_id_card,
+                "user_name": user.name  # 附加用户名，提升结果实用性（非新功能，属用户表已有字段）
+            },
+            "related_group_ids": group_ids,
+            "total_medical_records": len(all_medical_records),
+            "medical_records": all_medical_records
+        }
+    })
 
 
 @medical_record_bp.route('/disease-data-codes', methods=['GET'])
@@ -320,45 +430,6 @@ def get_disease_data_rows():
         'data': sorted_result,
         'message': f"共找到{len(sorted_result)}个疾病代码，对应{total_rows}行数据"
     }), 200
-
-# @medical_record_bp.route('/disease-data-codes', methods=['GET'])
-# def get_disease_data_codes():
-#     """
-#     获取每个disease_code对应的所有data_code
-#     支持可选参数disease_code进行过滤，例如:
-#     /disease-data-codes?disease_code=A000&disease_code=B159
-#     """
-#     # 获取查询参数中的disease_code列表
-#     disease_codes = request.args.getlist('disease_code')
-#
-#     # 构建查询
-#     query = Disease_data.query
-#
-#     # 如果指定了disease_code参数，则过滤
-#     if disease_codes:
-#         query = query.filter(Disease_data.disease_code.in_(disease_codes))
-#
-#     # 执行查询
-#     results = query.all()
-#
-#     # 整理结果：按disease_code分组，收集对应的data_code
-#     disease_data_map = defaultdict(list)
-#     for item in results:
-#         # 确保每个data_code在列表中唯一
-#         if item.data_code not in disease_data_map[item.disease_code]:
-#             disease_data_map[item.disease_code].append(item.data_code)
-#     # print(disease_data_map)
-#     # 转换为有序字典并排序
-#     sorted_result = {
-#         disease_code: sorted(data_codes)
-#         for disease_code, data_codes in sorted(disease_data_map.items())
-#     }
-#     # print(sorted_result)
-#     return jsonify({
-#         'status': 'success',
-#         'data': sorted_result,
-#         'message': f"共找到{len(sorted_result)}个疾病代码对应的{sum(len(v) for v in sorted_result.values())}个数据项代码"
-#     }), 200
 
 
 def keep_first_occurrence(lst):
@@ -626,3 +697,74 @@ def get_sensitive_data():
         'Trustvalue': value,
         'sensitive': sensitive,
     }), 200
+
+
+@medical_record_bp.route("/get_my_data", methods=["GET"])
+@jwt_required()
+def get_my_data():
+
+    user_id = get_jwt_identity()
+    user = User.query.filter_by(id=user_id, enable=True).first()
+    user_id_card = user.id_card  # 提取用户身份证号（用于后续关联）
+    user_info = user.to_dict()  # 复用模型to_dict()方法，获取用户完整信息
+    # print(user_id_card)
+    # -------------------------- 3. 遍历group_id=1/2/3，查询对应机构的病历数据 --------------------------
+    all_group_records = []  # 存储所有机构的病历数据
+    for group_id, model_map in INSTITUTION_MODELS.items():
+        # 获取当前机构的两个核心模型
+        record_model = model_map["record"]  # 病历主表（关联身份证号）
+        record_data_model = model_map["record_data"]  # 病历数据项表（目标表）
+        # print(record_model)
+        # 3.1 第一步：从病历主表查询该用户的medical_record_num（关联身份证号）
+        # 注：ins{group_id}_record表需含patient_id_num字段（对应user.id_card）
+        user_medical_nums = record_model.query.filter_by(
+            id_card=user_id_card,
+        ).with_entities(record_model.id).all()
+        # print(user_medical_nums)
+        # 提取medical_record_num列表（去重，避免重复查询）
+        medical_num_list = list({item[0] for item in user_medical_nums})
+        # print(medical_num_list)
+        if not medical_num_list:
+            # 该机构无此用户的病历主记录，跳过
+            all_group_records.append({
+                "group_id": group_id,
+                "institution_name": f"机构{group_id}",
+                "record_data_count": 0,
+                "record_data": []
+            })
+            continue
+        # print(all_group_records)
+        # 3.2 第二步：根据medical_record_num查询病历数据项表
+        record_data_list = record_data_model.query.filter(
+            record_data_model.medical_record_num.in_(medical_num_list)
+        ).all()
+        # print(record_data_list)
+        # 3.3 格式化数据（复用模型to_dict()方法）
+        formatted_data = [data.to_dict() for data in record_data_list]
+
+        # 3.4 汇总当前机构数据
+        all_group_records.append({
+            "group_id": group_id,
+            "institution_name": f"机构{group_id}",
+            "record_data_count": len(formatted_data),
+            "record_data": formatted_data
+        })
+
+    # -------------------------- 4. 计算总数据量 --------------------------
+    total_data_count = sum(item["record_data_count"] for item in all_group_records)
+
+    # -------------------------- 5. 返回最终结果 --------------------------
+    return jsonify({
+        "code": 200,
+        "msg": "查询成功" if total_data_count > 0 else "未查询到任何病历数据",
+        "data": {
+            "user_info": {
+                "user_id": user_id,
+                "id_card": user_id_card,
+                "user_name": user_info["name"],  # 附加用户名，提升可读性
+                "enable": user_info["enable"]
+            },
+            "total_record_data_count": total_data_count,
+            "group_records": all_group_records  # 各机构的详细数据
+        }
+    })
