@@ -13,6 +13,7 @@ class ins1_record(db.Model):
     age = db.Column(db.Integer, nullable=False)  # 年龄字段
     gender = db.Column(db.String(10), nullable=False)  # 性别字段
     id_card = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
+    phone = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
     doctor_code = db.Column(db.String(18), unique=False, nullable=False)
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow,
@@ -24,6 +25,7 @@ class ins1_record(db.Model):
             'name': self.name,
             'age': self.age,
             'gender': self.gender,
+            'phone': self.phone,
             'id_card': self.id_card,
             'doctor_code': self.doctor_code,
             'created_time': self.created_time.isoformat() if self.created_time else None,
@@ -234,6 +236,7 @@ class ins2_record(db.Model):
     age = db.Column(db.Integer, nullable=False)  # 年龄字段
     gender = db.Column(db.String(10), nullable=False)  # 性别字段
     id_card = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
+    phone = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
     doctor_code = db.Column(db.String(18), unique=False, nullable=False)
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow,
@@ -245,6 +248,7 @@ class ins2_record(db.Model):
             'name': self.name,
             'age': self.age,
             'gender': self.gender,
+            'phone': self.phone,
             'id_card': self.id_card,
             'doctor_code': self.doctor_code,
             'created_time': self.created_time.isoformat() if self.created_time else None,
@@ -454,6 +458,7 @@ class ins3_record(db.Model):
     age = db.Column(db.Integer, nullable=False)  # 年龄字段
     gender = db.Column(db.String(10), nullable=False)  # 性别字段
     id_card = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
+    phone = db.Column(db.String(18), unique=False, nullable=False)  # 身份证号码，作为唯一标识
     doctor_code = db.Column(db.String(18), unique=False, nullable=False)
     created_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow,
@@ -465,12 +470,12 @@ class ins3_record(db.Model):
             'name': self.name,
             'age': self.age,
             'gender': self.gender,
+            'phone': self.phone,
             'id_card': self.id_card,
             'doctor_code': self.doctor_code,
             'created_time': self.created_time.isoformat() if self.created_time else None,
             'updated_time': self.updated_time.isoformat() if self.updated_time else None
         }
-
 # ----------------------- 病历-病种表 -----------------------
 class ins3_record_disease(db.Model):
     __tablename__ = 'ins3_record_disease'

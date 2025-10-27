@@ -67,7 +67,8 @@ def query_institution_data(
             'age': None,
             'gender': None,
             'id_card': None,
-            'doctor_code': None
+            'doctor_code': None,
+            'phone': None
         }
         # 如果找到关联的model_record，补充字段
         if related_model_rec:
@@ -75,7 +76,8 @@ def query_institution_data(
                 'age': related_model_rec.age,
                 'gender': related_model_rec.gender,
                 'id_card': related_model_rec.id_card,
-                'doctor_code': related_model_rec.doctor_code
+                'doctor_code': related_model_rec.doctor_code,
+                'phone': related_model_rec.phone
             })
 
         # 添加用户选择的字段
