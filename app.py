@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from config import config
 import os
-from utils.extensions import db, jwt
+from utils.extensions import db, jwt, redis_client
 from utils.response import (
     success_response,
     error_response,
@@ -17,18 +17,27 @@ import pytz
 def create_app(config_name=None):
     app = Flask(__name__)
 
+    # 配置应用
+    config_name = config_name or os.getenv('FLASK_ENV', 'default')
+    cfg = config[config_name]  # 获取配置类
+    app.config.from_object(cfg)  # 绑定配置
+
     print("当前本地时间:", datetime.now())
     print("当前 UTC 时间:", datetime.utcnow())
     print("当前北京时间:", datetime.now(pytz.timezone("Asia/Shanghai")))
-
-    # 配置应用
-    config_name = config_name or os.getenv('FLASK_ENV', 'default')
-    app.config.from_object(config[config_name])
+    print("Redis 配置：")
+    print(app.config['REDIS_HOST'], app.config['REDIS_PORT'], app.config['REDIS_DB'])
 
     # 初始化扩展
     db.init_app(app)
     jwt.init_app(app)
     CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
+    # 测试 Redis 连接是否成功
+    try:
+        redis_client.ping()
+        print("Redis 连接成功")
+    except Exception as e:
+        print(f"Redis 连接失败：{e}")
 
     # 注册蓝图
     from modules.auth.routes import auth_bp
