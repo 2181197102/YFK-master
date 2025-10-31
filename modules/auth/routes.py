@@ -1,5 +1,6 @@
 """
 用户认证相关接口（JWT）
+modules/auth/routes.py
 --------------------------------
 依赖：
     - Flask‑JWT‑Extended
@@ -36,6 +37,14 @@ from utils.response import (
 )
 
 from modules.auth.models import User, Role, UserRoleRelation, Group, UserGroupRelation
+
+from modules.auth.sms_code import (
+    generate_verification_code,
+    store_verification_code,
+    verify_code,
+    get_phone_by_id_card,
+    is_phone_number,
+)
 
 # ────────────────────────────── Blueprint ──────────────────────────────
 auth_bp = Blueprint("auth", __name__)
@@ -426,3 +435,194 @@ def logout():
     若后续实现 Token 拉黑，可在此处插入黑名单逻辑。
     """
     return success_response(message="登出成功")
+
+
+# ────────────────────────────── 验证码相关接口 ──────────────────────────────
+
+@auth_bp.route("/sms/generate-login-code", methods=["POST"])
+def generate_login_code():
+    """
+    接口1：生成登录验证码（无需token）
+    接收参数：account（身份证号或手机号）
+    返回：成功与否 或 手机号（如果输入的是身份证号）
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        account = data.get("account", "").strip()
+
+        if not account:
+            return error_response("账号不能为空", 400)
+
+        # 判断输入是手机号还是身份证号
+        if is_phone_number(account):
+            # 直接使用手机号
+            phone = account
+        else:
+            # 根据身份证号查询手机号
+            phone = get_phone_by_id_card(account)
+            if not phone:
+                return not_found_response("未找到该身份证号对应的用户")
+
+        # 生成6位验证码
+        code = generate_verification_code(6)
+
+        # 存储到 Redis
+        success = store_verification_code("login", phone, code, expire_seconds=600)
+
+        if not success:
+            return server_error_response("验证码生成失败，请稍后重试")
+
+        current_app.logger.info(f"为手机号 {phone} 生成登录验证码: {code}")
+
+        # 如果输入的是身份证号，返回手机号；否则只返回成功信息
+        if not is_phone_number(account):
+            result = {"phone": phone}
+            return success_response(result, "验证码已生成")
+        else:
+            return success_response(message="验证码已生成")
+
+    except Exception:  # pragma: no cover
+        current_app.logger.exception("Generate login code error")
+        return server_error_response("验证码生成失败")
+
+
+@auth_bp.route("/sms/verify-login-code", methods=["POST"])
+def verify_login_code():
+    """
+    接口2：验证登录验证码并登录（无需token）
+    接收参数：phone（手机号）、code（验证码）
+    返回：验证通过则返回 access_token，否则返回错误
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        phone = data.get("phone", "").strip()
+        code = data.get("code", "").strip()
+
+        if not phone or not code:
+            return error_response("手机号和验证码不能为空", 400)
+
+        # 验证验证码
+        if not verify_code("login", phone, code):
+            return error_response("验证码错误或已过期", 400)
+
+        # 验证通过，查询用户并生成 token
+        user = User.query.filter_by(phone=phone).first()
+        if not user:
+            return not_found_response("该手机号未注册")
+
+        if not user.enable:
+            return forbidden_response("用户已被禁用")
+
+        # 获取用户角色和组信息
+        role_code, role_name = _get_user_role(user.id)
+        group_name = _get_user_group(user.id)
+
+        additional_claims = {
+            "user_id": user.id,
+            "username": user.username,
+            "role_code": role_code,
+            "group_name": group_name,
+        }
+        access_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(hours=24),
+            additional_claims=additional_claims,
+        )
+
+        # 获取客户端IP地址
+        current_ip = get_client_ip()
+
+        # 更新IP追踪记录并获取上次登录IP
+        last_ip = _update_access_location_tracker(user.id, current_ip)
+
+        # 记录登录日志
+        if last_ip:
+            current_app.logger.info(
+                "用户 %s 通过验证码登录成功，当前IP: %s，上次登录IP: %s",
+                user.username, current_ip, last_ip
+            )
+        else:
+            current_app.logger.info(
+                "用户 %s 通过验证码首次登录，当前IP: %s",
+                user.username, current_ip
+            )
+
+        # 提交数据库更改
+        db.session.commit()
+
+        result = {
+            "access_token": access_token,
+            "user": {
+                "username": user.username,
+                "current_login_ip": current_ip,
+                "last_login_ip": last_ip,
+            },
+        }
+        return success_response(result, "登录成功")
+
+    except Exception:  # pragma: no cover
+        db.session.rollback()
+        current_app.logger.exception("Verify login code error")
+        return server_error_response("验证码登录失败")
+
+
+@auth_bp.route("/sms/generate-auth-code", methods=["POST"])
+@jwt_required()
+def generate_auth_code():
+    """
+    接口3：生成身份验证验证码（需要token）
+    接收参数：phone（手机号）
+    返回：是否存储成功
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        phone = data.get("phone", "").strip()
+
+        if not phone:
+            return error_response("手机号不能为空", 400)
+
+        # 生成6位验证码
+        code = generate_verification_code(6)
+
+        # 存储到 Redis，key前缀为 auth
+        success = store_verification_code("auth", phone, code, expire_seconds=600)
+
+        if not success:
+            return server_error_response("验证码生成失败，请稍后重试")
+
+        current_app.logger.info(f"为手机号 {phone} 生成身份验证码: {code}")
+
+        return success_response(message="验证码已生成并发送")
+
+    except Exception:  # pragma: no cover
+        current_app.logger.exception("Generate auth code error")
+        return server_error_response("验证码生成失败")
+
+
+@auth_bp.route("/sms/verify-auth-code", methods=["POST"])
+@jwt_required()
+def verify_auth_code():
+    """
+    接口4：验证身份验证验证码（需要token）
+    接收参数：phone（手机号）、code（验证码）
+    返回：验证通过或验证码错误
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        phone = data.get("phone", "").strip()
+        code = data.get("code", "").strip()
+
+        if not phone or not code:
+            return error_response("手机号和验证码不能为空", 400)
+
+        # 验证验证码
+        if not verify_code("auth", phone, code):
+            return error_response("验证码错误或已过期", 400)
+
+        current_app.logger.info(f"手机号 {phone} 身份验证通过")
+
+        return success_response(message="验证通过")
+
+    except Exception:  # pragma: no cover
+        current_app.logger.exception("Verify auth code error")
+        return server_error_response("验证码验证失败")

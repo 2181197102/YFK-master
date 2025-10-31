@@ -13,11 +13,11 @@ class Config:
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
     # 数据库配置
-    DB_HOST = os.environ.get('DB_HOST', '122.207.103.159')
-    DB_PORT = int(os.environ.get('DB_PORT', 13306))
+    DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
+    DB_PORT = int(os.environ.get('DB_PORT', 3306))
     DB_USER = os.environ.get('DB_USER', 'root')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', '!TuXy1D8oQ@122.207.103.159')  # 示例密码
-    DB_NAME = os.environ.get('DB_NAME', 'medical_system')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', '123456@127.0.0.1')  # 示例密码
+    DB_NAME = os.environ.get('DB_NAME', 'tableName')
 
     # 对密码进行 URL 编码
     DB_PASSWORD_ENCODED = quote(DB_PASSWORD)
@@ -40,6 +40,13 @@ class Config:
     # 应用配置
     APP_HOST = os.environ.get('APP_HOST', '0.0.0.0')
     APP_PORT = int(os.environ.get('APP_PORT', 7878))
+
+    # Redis 配置（新增部分）
+    REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
+    REDIS_EXPIRE_SECONDS = int(os.environ.get('REDIS_EXPIRE_SECONDS', 600))  # 默认10分钟
 
     # CORS配置
     CORS_ORIGINS = [

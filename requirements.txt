@@ -9,3 +9,5 @@ Werkzeug==2.3.7
 cryptography==41.0.7
 pytz~=2025.2
 sqlalchemy~=2.0.41
+redis~=7.0.1
+numpy~=2.2.6
