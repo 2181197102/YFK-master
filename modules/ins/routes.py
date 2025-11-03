@@ -701,6 +701,353 @@ def get_sensitive_data():
     }), 200
 
 
+@medical_record_bp.route("/get_patient_detail", methods=["GET"])
+@jwt_required()
+def get_patient_detail():
+    """
+    根据病历号查询病人的详细病历数据
+    请求参数:
+        medical_record_num: 病历号（必填）
+    返回:
+        病人基本信息 + 病历详细数据
+    示例: GET /get_patient_detail?medical_record_num=MR001
+    """
+    try:
+        # -------------------------- 1. 参数验证 --------------------------
+        medical_record_num = request.args.get("medical_record_num")
+
+        if not medical_record_num:
+            return jsonify({
+                "code": 400,
+                "msg": "参数错误：缺少必填参数 medical_record_num",
+                "data": None
+            }), 400
+
+        # -------------------------- 2. 获取当前登录用户信息 --------------------------
+        user_id = get_jwt_identity()
+
+        if not user_id:
+            return jsonify({
+                "code": 400,
+                "msg": "参数错误：请传入有效的user_id（整数）",
+                "data": None
+            }), 400
+
+        user = User.query.filter_by(id=user_id, enable=True).first()
+        if not user:
+            return jsonify({
+                "code": 404,
+                "msg": f"未找到ID为{user_id}的有效用户",
+                "data": None
+            }), 404
+
+        user_id_card = user.id_card  # 医生工号即为身份证号
+
+        # -------------------------- 3. 查询用户所属的group_id（即institution_id） --------------------------
+        group_relations = UserGroupRelation.query.filter_by(
+            user_id=user_id,
+            enable=True
+        ).all()
+
+        if not group_relations:
+            return jsonify({
+                "code": 404,
+                "msg": f"用户{user_id}未关联任何有效组",
+                "data": None
+            }), 404
+
+        # 提取去重的group_id（即institution_id）
+        group_ids = list({relation.group_id for relation in group_relations})
+
+        # -------------------------- 4. 遍历用户所属的所有机构，查找该病历 --------------------------
+        for institution_id in group_ids:
+            # 跳过无效的机构ID
+            if institution_id not in INSTITUTION_MODELS:
+                continue
+
+            # 获取对应机构的模型
+            model_map = INSTITUTION_MODELS[institution_id]
+            doctor_record_model = model_map["doctor_record"]
+            record_model = model_map["record"]
+            record_data_model = model_map["record_data"]
+            record_disease_model = model_map["record_disease"]
+
+            # 验证该病历是否属于当前医生
+            doctor_record = doctor_record_model.query.filter_by(
+                medical_record_num=medical_record_num,
+                doctor_code=user_id_card
+            ).first()
+
+            # 如果在该机构找到了该病历
+            if doctor_record:
+                # -------------------------- 5. 查询病人基本信息（record表） --------------------------
+                patient_basic = record_model.query.filter_by(
+                    id=medical_record_num
+                ).first()
+
+                # -------------------------- 6. 查询病历详细数据（record_data表） --------------------------
+                patient_data = record_data_model.query.filter_by(
+                    medical_record_num=medical_record_num
+                ).first()
+
+                # -------------------------- 7. 查询病种信息（record_disease表） --------------------------
+                disease_info = record_disease_model.query.filter_by(
+                    medical_record_num=medical_record_num
+                ).first()
+
+                # -------------------------- 8. 格式化返回数据 --------------------------
+                patient_detail = {
+                    "medical_record_num": medical_record_num,
+                    "institution_id": institution_id,
+                    "institution_name": f"机构{institution_id}",
+                    "patient_basic_info": patient_basic.to_dict() if patient_basic else None,
+                    "patient_record_data": patient_data.to_dict() if patient_data else None,
+                    "disease_info": disease_info.to_dict() if disease_info else None,
+                    "doctor_info": {
+                        "doctor_name": doctor_record.doctor_name,
+                        "doctor_code": doctor_record.doctor_code
+                    }
+                }
+
+                # -------------------------- 9. 返回结果 --------------------------
+                return jsonify({
+                    "code": 200,
+                    "msg": "查询成功",
+                    "data": patient_detail
+                }), 200
+
+        # 如果所有机构都没有找到该病历
+        return jsonify({
+            "code": 403,
+            "msg": f"无权访问：病历号 {medical_record_num} 不属于当前医生",
+            "data": None
+        }), 403
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({
+            "code": 500,
+            "msg": f"数据库错误: Database query failed",
+            "data": None
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "msg": f"服务器错误: Internal server error",
+            "data": None
+        }), 500
+
+
+@medical_record_bp.route("/get_patient_records_by_idcard", methods=["GET"])
+@jwt_required()
+def get_patient_records_by_idcard():
+    """
+    根据病人身份证号查询该病人在所有机构的病历详情
+    请求参数:
+        id_card: 病人身份证号（必填）
+    返回:
+        该病人在所有机构的病历详细数据列表，突出显示当前医生信息和所属机构
+    示例: GET /get_patient_records_by_idcard?id_card=110101199001011234
+    """
+    try:
+        # -------------------------- 1. 参数验证 --------------------------
+        patient_id_card = request.args.get("id_card")
+
+        if not patient_id_card:
+            return jsonify({
+                "code": 400,
+                "msg": "参数错误：缺少必填参数 id_card",
+                "data": None
+            }), 400
+
+        # -------------------------- 2. 获取当前登录医生信息和所属机构 --------------------------
+        user_id = get_jwt_identity()
+        user = User.query.filter_by(id=user_id, enable=True).first()
+
+        if not user:
+            return jsonify({
+                "code": 404,
+                "msg": f"未找到ID为{user_id}的有效用户",
+                "data": None
+            }), 404
+
+        # 获取当前医生的工号（身份证号）
+        current_doctor_code = user.id_card
+
+        # 查询当前医生所属的机构（group_id即institution_id）
+        group_relations = UserGroupRelation.query.filter_by(
+            user_id=user_id,
+            enable=True
+        ).all()
+
+        if not group_relations:
+            return jsonify({
+                "code": 404,
+                "msg": f"用户{user_id}未关联任何有效组",
+                "data": None
+            }), 404
+
+        # 提取当前医生所属的所有机构ID
+        current_doctor_institutions = list({relation.group_id for relation in group_relations})
+
+        # 组装当前医生信息
+        current_doctor_info = {
+            "doctor_id": user_id,
+            "doctor_name": user.name,
+            "doctor_code": current_doctor_code,
+            "id_card": current_doctor_code,
+            "institutions": [
+                {
+                    "institution_id": inst_id,
+                    "institution_name": f"机构{inst_id}"
+                } 
+                for inst_id in current_doctor_institutions
+            ]
+        }
+
+        # -------------------------- 3. 遍历所有机构，查询病历数据 --------------------------
+        all_institution_records = []
+        total_records_count = 0
+
+        for institution_id, model_map in INSTITUTION_MODELS.items():
+            # 获取当前机构的模型
+            doctor_record_model = model_map["doctor_record"]
+            record_model = model_map["record"]
+            record_data_model = model_map["record_data"]
+            record_disease_model = model_map["record_disease"]
+
+            # 3.1 从doctor_record表中查询该身份证号对应的所有病历号
+            doctor_records = doctor_record_model.query.filter_by(
+                patient_id_num=patient_id_card
+            ).all()
+
+            if not doctor_records:
+                # 该机构没有该病人的病历，跳过
+                continue
+
+            # 提取所有病历号
+            medical_record_nums = [dr.medical_record_num for dr in doctor_records]
+
+            # 3.2 根据病历号列表，批量查询record_data表获取详细信息
+            institution_records = []
+            for medical_record_num in medical_record_nums:
+                # 查询病人基本信息
+                patient_basic = record_model.query.filter_by(
+                    id_card=patient_id_card
+                ).first()
+
+                # 查询病历详细数据
+                patient_data = record_data_model.query.filter_by(
+                    medical_record_num=medical_record_num
+                ).first()
+
+                # 查询病种信息
+                disease_info = record_disease_model.query.filter_by(
+                    medical_record_num=medical_record_num
+                ).first()
+
+                # 查找对应的医生信息
+                doctor_info = next(
+                    (dr for dr in doctor_records if dr.medical_record_num == medical_record_num),
+                    None
+                )
+
+                # 判断该病历是否由当前登录医生创建
+                is_current_doctor = (
+                    doctor_info and 
+                    doctor_info.doctor_code == current_doctor_code
+                )
+
+                # 组装单条病历记录
+                record_detail = {
+                    "medical_record_num": medical_record_num,
+                    "is_current_doctor_record": is_current_doctor,  # 标记是否为当前医生的病历
+                    "patient_basic_info": patient_basic.to_dict() if patient_basic else None,
+                    "patient_record_data": patient_data.to_dict() if patient_data else None,
+                    "disease_info": disease_info.to_dict() if disease_info else None,
+                    "doctor_info": {
+                        "doctor_name": doctor_info.doctor_name if doctor_info else None,
+                        "doctor_code": doctor_info.doctor_code if doctor_info else None,
+                        "is_current_doctor": is_current_doctor  # 标记是否为当前医生
+                    },
+                    "record_time": {
+                        "created_time": doctor_info.created_time.isoformat() if doctor_info and doctor_info.created_time else None,
+                        "updated_time": doctor_info.updated_time.isoformat() if doctor_info and doctor_info.updated_time else None
+                    }
+                }
+
+                institution_records.append(record_detail)
+
+            # 判断该机构是否为当前医生所属机构
+            is_current_doctor_institution = institution_id in current_doctor_institutions
+
+            # 统计当前医生在该机构的病历数
+            current_doctor_records_count = sum(
+                1 for record in institution_records 
+                if record.get("is_current_doctor_record", False)
+            )
+
+            # 3.3 汇总当前机构的所有病历
+            all_institution_records.append({
+                "institution_id": institution_id,
+                "institution_name": f"机构{institution_id}",
+                "is_current_doctor_institution": is_current_doctor_institution,  # 标记是否为当前医生所属机构
+                "records_count": len(institution_records),
+                "current_doctor_records_count": current_doctor_records_count,  # 当前医生在该机构的病历数
+                "records": institution_records
+            })
+
+            total_records_count += len(institution_records)
+
+        # -------------------------- 4. 统计当前医生的病历数 --------------------------
+        current_doctor_total_records = sum(
+            inst.get("current_doctor_records_count", 0) 
+            for inst in all_institution_records
+        )
+
+        # -------------------------- 5. 返回结果 --------------------------
+        if total_records_count == 0:
+            return jsonify({
+                "code": 200,
+                "msg": f"未查询到身份证号 {patient_id_card} 的任何病历记录",
+                "data": {
+                    "current_doctor": current_doctor_info,  # 当前医生信息
+                    "patient_id_card": patient_id_card,
+                    "total_institutions": 0,
+                    "total_records": 0,
+                    "current_doctor_total_records": 0,
+                    "institution_records": []
+                }
+            }), 200
+
+        return jsonify({
+            "code": 200,
+            "msg": "查询成功",
+            "data": {
+                "current_doctor": current_doctor_info,  # 当前登录医生的完整信息
+                "patient_id_card": patient_id_card,
+                "total_institutions": len(all_institution_records),
+                "total_records": total_records_count,
+                "current_doctor_total_records": current_doctor_total_records,  # 当前医生创建的病历总数
+                "institution_records": all_institution_records
+            }
+        }), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({
+            "code": 500,
+            "msg": f"数据库错误: Database query failed",
+            "data": None
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "msg": f"服务器错误: Internal server error",
+            "data": None
+        }), 500
+
+
 @medical_record_bp.route("/get_my_data", methods=["GET"])
 @jwt_required()
 def get_my_data():
