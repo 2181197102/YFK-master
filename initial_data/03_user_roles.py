@@ -15,6 +15,7 @@ USER_ROLE_MAP = [
     ("wangjiangguo", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
     ("liumin", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
     ("chenming", ["FAMILY_DOCTOR", "ATTENDING_DOCTOR"]),
+    ("zhaoda", ["EMERGENCY_DOCTOR", "ATTENDING_DOCTOR"]),
     ("wumin", ["PATIENT"])
 ]
 

@@ -26,6 +26,27 @@ INSTITUTION_RECORD: Dict[str, Type[ins1_record | ins2_record | ins3_record]] = {
     'ins3': ins3_record
 }
 
+# 机构模型映射
+INSTITUTION_MODELS = {
+    1: {
+        'record': ins1_record,
+        'record_disease': ins1_record_disease,
+        'record_data': ins1_record_data,
+        'doctor_record': ins1_doctor_record
+    },
+    2: {
+        'record': ins2_record,
+        'record_disease': ins2_record_disease,
+        'record_data': ins2_record_data,
+        'doctor_record': ins2_doctor_record
+    },
+    3: {
+        'record': ins3_record,
+        'record_disease': ins3_record_disease,
+        'record_data': ins3_record_data,
+        'doctor_record': ins3_doctor_record
+    }
+}
 
 def get_valid_fields(model: Type[ins1_record_data]) -> List[str]:
     """获取模型中所有有效的数据字段（排除基础字段）"""
@@ -160,161 +181,8 @@ def get_record_data():
     }), 200
 
 
-# 机构模型映射
-INSTITUTION_MODELS = {
-    1: {
-        'record': ins1_record,
-        'record_disease': ins1_record_disease,
-        'record_data': ins1_record_data,
-        'doctor_record': ins1_doctor_record
-    },
-    2: {
-        'record': ins2_record,
-        'record_disease': ins2_record_disease,
-        'record_data': ins2_record_data,
-        'doctor_record': ins2_doctor_record
-    },
-    3: {
-        'record': ins3_record,
-        'record_disease': ins3_record_disease,
-        'record_data': ins3_record_data,
-        'doctor_record': ins3_doctor_record
-    }
-}
 
 
-# @medical_record_bp.route("/get_patient", methods=["GET"])
-# @jwt_required()
-# def get_patient(user_id):
-#     """
-#     根据患者身份证号查询病历信息
-#     user_id: 患者的身份证号
-#     """
-#     try:
-#         current_user_id = get_jwt_identity()
-#
-#         # 获取客户端IP并检查白名单
-#         client_ip = get_client_ip()
-#         is_whitelist_ip = is_ip_in_whitelist(client_ip)
-#
-#         # 检查工作时间
-#         is_working_time_flag = is_working_time()
-#
-#         # 更新访问追踪统计
-#         update_access_tracking(current_user_id, client_ip, is_working_time_flag, is_whitelist_ip)
-#
-#         accessible_ins_ids = [1, 2, 3]
-#
-#         # 2. 遍历所有可访问的机构查询记录
-#         all_institution_records = []
-#         for ins_id in accessible_ins_ids:
-#             if ins_id not in INSTITUTION_MODELS:
-#                 continue  # 跳过无效机构ID
-#
-#             models = INSTITUTION_MODELS[ins_id]
-#             ins_name = models['name']
-#
-#             # 3. 第一步：通过身份证号在病历表中查询记录，获取medical_record_num关联
-#             # 注意：根据数据模型，insX_record表中没有直接的medical_record_num字段
-#             # 这里通过insX_doctor_record表关联获取病历号（因为只有该表有medical_record_num）
-#             # 先查询该机构中该患者的医生关联记录
-#             doctor_record_model = {
-#                 1: ins1_doctor_record,
-#                 2: ins2_doctor_record,
-#                 3: ins3_doctor_record
-#             }.get(ins_id)
-#
-#             if not doctor_record_model:
-#                 continue
-#
-#             # 通过患者身份证号查询医生-病历关联记录，获取medical_record_num
-#             doctor_records = doctor_record_model.query.filter_by(
-#                 patient_id_num=user_id
-#             ).all()
-#
-#             if not doctor_records:
-#                 continue  # 该机构无此患者的关联记录
-#
-#             # 4. 处理每条病历记录
-#             ins_records = []
-#             for dr in doctor_records:
-#                 medical_record_num = dr.medical_record_num
-#
-#                 # 4.1 查询患者基本信息（insX_record）
-#                 patient_basic = models['record'].query.filter_by(
-#                     id_card=user_id
-#                 ).first()
-#
-#                 # 4.2 查询病种信息（insX_record_disease）
-#                 disease_info = models['record_disease'].query.filter_by(
-#                     medical_record_num=medical_record_num
-#                 ).first()
-#
-#                 # 4.3 查询数据项信息（insX_record_data）
-#                 data_info = models['record_data'].query.filter_by(
-#                     medical_record_num=medical_record_num
-#                 ).first()
-#
-#                 # 4.4 查询疾病对应的数据项编码
-#                 related_data_codes = []
-#                 if disease_info:
-#                     related_data = Disease_data.query.filter_by(
-#                         disease_code=disease_info.disease_code
-#                     ).all()
-#                     related_data_codes = [item.data_code for item in related_data]
-#
-#                 # 组装记录信息
-#                 ins_records.append({
-#                     "medical_record_num": medical_record_num,
-#                     "patient_basic": patient_basic.to_dict() if patient_basic else None,
-#                     "disease_info": disease_info.to_dict() if disease_info else None,
-#                     "data_info": data_info.to_dict() if data_info else None,
-#                     "related_data_codes": related_data_codes,
-#                     "doctor_info": {
-#                         "doctor_name": dr.doctor_name,
-#                         "doctor_code": dr.doctor_code
-#                     },
-#                     "record_time": {
-#                         "created_time": dr.created_time.isoformat() if dr.created_time else None,
-#                         "updated_time": dr.updated_time.isoformat() if dr.updated_time else None
-#                     }
-#                 })
-#
-#             # 5. 汇总该机构的记录
-#             all_institution_records.append({
-#                 "institution_id": ins_id,
-#                 "institution_name": ins_name,
-#                 "record_count": len(ins_records),
-#                 "records": ins_records
-#             })
-#
-#         # 6. 返回结果
-#         if not all_institution_records:
-#             return jsonify({
-#                 "code": 200,
-#                 "msg": "未查询到该患者的任何病历记录",
-#                 "data": []
-#             })
-#
-#         return jsonify({
-#             "code": 200,
-#             "client_ip": client_ip,
-#             "is_whitelist_ip": is_whitelist_ip,
-#             "is_working_time": is_working_time_flag,
-#             "data": {
-#                 "patient_id_card": user_id,
-#                 "total_institutions": len(all_institution_records),
-#                 "total_records": sum(ins["record_count"] for ins in all_institution_records),
-#                 "institution_records": all_institution_records
-#             }
-#         })
-#
-#     except SQLAlchemyError as e:
-#         db.session.rollback()
-#         return jsonify({"code": 500, "msg": f"数据库错误: {str(e)}"}), 500
-#     except Exception as e:
-#         return jsonify({"code": 500, "msg": f"服务器错误: {str(e)}"}), 500
-#
 
 @medical_record_bp.route("/get_patient", methods=["GET"])
 @jwt_required()
