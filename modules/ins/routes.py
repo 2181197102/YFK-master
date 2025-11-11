@@ -181,13 +181,10 @@ def get_record_data():
     }), 200
 
 
-
-
-
 @medical_record_bp.route("/get_patient", methods=["GET"])
 @jwt_required()
 def get_patient():
-
+    # print(11111)
     user_id = get_jwt_identity()
 
     if not user_id:
@@ -265,7 +262,6 @@ def get_disease_data_rows():
     """
     # 获取查询参数中的disease_code列表
     disease_codes = request.args.getlist('disease_code')
-
     # 构建查询
     query = Disease_data.query
 
@@ -985,3 +981,109 @@ def get_my_data():
             "group_records": all_group_records  # 各机构的详细数据
         }
     })
+
+
+@medical_record_bp.route('/add_record', methods=['POST'])
+@jwt_required()
+def add_record():
+    """
+    添加病历记录（多表关联插入）
+    请求体需包含：用户认证信息、患者基本信息、医生信息、疾病相关参数
+    """
+    try:
+        # 1. 获取当前用户ID（实际应用中建议从认证token中解析）
+        user_id = get_jwt_identity()
+        # print(user_id)
+        # 2. 查询用户所属组ID
+        user_group = UserGroupRelation.query.filter_by(
+            user_id=user_id,
+            enable=True
+        ).first()
+        doctor = User.query.filter_by(
+            id=user_id,
+            enable=True
+        ).first()
+        doctor_id = doctor.id_card
+        doctor_name = doctor.username
+        # print(user_code)
+        if not user_group:
+            return jsonify({'code': 404, 'msg': '未查询到用户所属有效组'}), 404
+
+        group_id = user_group.group_id
+        # print(group_id)
+
+        # 3. 动态获取对应组的模型类
+        model_suffixes = [
+            'record',
+            'record_data',
+            'record_disease',
+            'doctor_record'
+        ]
+        models = {}
+
+        for suffix in model_suffixes:
+            models[suffix] = INSTITUTION_MODELS[group_id][suffix]
+
+
+        # 4. 解析请求数据
+        req_data = request.json
+        print(req_data)
+        # 6. 开启数据库事务
+        db.session.begin_nested()
+
+        # 7. 插入医生-病历表（获取自增ID作为medical_record_num）
+        doctor_record = models['doctor_record'](
+            doctor_name=doctor_name,
+            doctor_code=doctor_id,
+            patient_name=req_data['name'],
+            patient_id_num=req_data['id_card'],
+            medical_record_num='temp'  # 临时值，稍后更新
+        )
+
+        db.session.add(doctor_record)
+        db.session.flush()  # 触发自增ID生成
+
+        medical_record_num = str(doctor_record.id)
+        doctor_record.medical_record_num = medical_record_num  # 更新为自增ID
+
+        # 8. 插入病历主表
+        record = models['record'](
+            name=req_data['name'],
+            age=int(req_data['age']),
+            gender=req_data['gender'],
+            id_card=req_data['id_card'],
+            phone=req_data['phone'],
+            doctor_code=doctor_id
+        )
+        db.session.add(record)
+
+        # 9. 插入病历-病种表
+        disease_record = models['record_disease'](
+            medical_record_num=medical_record_num,
+            disease_code=req_data['disease_code']
+        )
+        db.session.add(disease_record)
+
+        # 10. 插入病历-数据项表（从请求和疾病数据中提取字段）
+        record_data_kwargs = {'medical_record_num': medical_record_num}
+
+        for col in models['record_data'].__table__.columns:
+            col_name = col.name
+            if col_name in ['id', 'medical_record_num', 'created_time', 'updated_time']:
+                continue
+            if req_data.get(col_name):
+                record_data_kwargs[col_name] = req_data.get(col_name)
+            else:
+                record_data_kwargs[col_name] = 'None'
+
+        record_data = models['record_data'](**record_data_kwargs)
+        db.session.add(record_data)
+        db.session.commit()
+        return jsonify({'code': 200, 'msg': '添加成功'})
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'code': 500, 'msg': f'数据库操作失败：{str(e)}'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'code': 500, 'msg': f'服务器错误：{str(e)}'}), 500
