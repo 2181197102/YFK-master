@@ -1027,7 +1027,7 @@ def add_record():
 
         # 4. 解析请求数据
         req_data = request.json
-        print(req_data)
+        # print(req_data)
         # 6. 开启数据库事务
         db.session.begin_nested()
 
@@ -1042,7 +1042,7 @@ def add_record():
 
         db.session.add(doctor_record)
         db.session.flush()  # 触发自增ID生成
-
+        print(1)
         medical_record_num = str(doctor_record.id)
         doctor_record.medical_record_num = medical_record_num  # 更新为自增ID
 
@@ -1056,14 +1056,14 @@ def add_record():
             doctor_code=doctor_id
         )
         db.session.add(record)
-
+        print(2)
         # 9. 插入病历-病种表
         disease_record = models['record_disease'](
             medical_record_num=medical_record_num,
-            disease_code=req_data['disease_code']
+            disease_code=req_data['diagnosis_name_code']
         )
         db.session.add(disease_record)
-
+        print(3)
         # 10. 插入病历-数据项表（从请求和疾病数据中提取字段）
         record_data_kwargs = {'medical_record_num': medical_record_num}
 
@@ -1071,13 +1071,25 @@ def add_record():
             col_name = col.name
             if col_name in ['id', 'medical_record_num', 'created_time', 'updated_time']:
                 continue
-            if req_data.get(col_name):
-                record_data_kwargs[col_name] = req_data.get(col_name)
+            # if req_data.get(col_name):
+            req_value = req_data.get(col_name)
+            from sqlalchemy.types import String, Numeric
+            if isinstance(col.type, String):
+                if req_value:
+                    record_data_kwargs[col_name] = str(req_value)
+                else:
+                    record_data_kwargs[col_name]=''
             else:
-                record_data_kwargs[col_name] = 'None'
+                from decimal import Decimal
+                if req_value:
+                    decimal_value = Decimal(str(req_value)).quantize(Decimal('0.00'))  # 强制保留2位小数
+                    record_data_kwargs[col_name] = decimal_value
+                else:
+                    record_data_kwargs[col_name]=Decimal('0.00')
 
         record_data = models['record_data'](**record_data_kwargs)
         db.session.add(record_data)
+        print(4)
         db.session.commit()
         return jsonify({'code': 200, 'msg': '添加成功'})
 

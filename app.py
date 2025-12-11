@@ -47,6 +47,7 @@ def create_app(config_name=None):
     from modules.system_config.routes import sys_cfg_bp
     from modules.ins.routes import medical_record_bp
     from modules.whitelist.routes import whitelist_bp
+    from modules.emergency.routes import emergency_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(user_mgmt_bp, url_prefix='/api/user_management')
@@ -55,6 +56,7 @@ def create_app(config_name=None):
     app.register_blueprint(sys_cfg_bp, url_prefix='/api/system_config')
     app.register_blueprint(medical_record_bp, url_prefix='/api/medical_record')
     app.register_blueprint(whitelist_bp, url_prefix='/api/whitelist')
+    app.register_blueprint(emergency_bp, url_prefix='/api/emergency')
 
     # 统一错误处理
     @app.errorhandler(400)
