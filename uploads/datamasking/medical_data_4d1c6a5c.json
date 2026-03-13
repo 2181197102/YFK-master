@@ -1,0 +1,98 @@
+{
+  "file_path": "/tmp/mock_data.csv",
+  "selected_headers": [
+    "abdominal_ultrasound",
+    "c_peptide"
+  ],
+  "record_count": 10,
+  "scenario": "决策",
+  "method": "差分隐私",
+  "data_code_details": {
+    "abdominal_ultrasound": {
+      "data_code": "abdominal_ultrasound",
+      "data_type": 0,
+      "disease_code": "E10",
+      "id": 49,
+      "remark": "腹部彩超",
+      "security_category": "NON_SENSITIVE",
+      "security_level": 1,
+      "sensitive": "0.3",
+      "similar": "0.4"
+    },
+    "c_peptide": {
+      "data_code": "c_peptide",
+      "data_type": 1,
+      "disease_code": "E10",
+      "id": 48,
+      "remark": "C肽",
+      "security_category": "NON_SENSITIVE",
+      "security_level": 1,
+      "sensitive": "0.3",
+      "similar": "0.4"
+    }
+  },
+  "results": [
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "2.308837949026512",
+      "institution": "ins1",
+      "medical_record_num": "1"
+    },
+    {
+      "abdominal_ultrasound": "正常",
+      "c_peptide": "2.388814748572117",
+      "institution": "ins1",
+      "medical_record_num": "2"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "3.812764822593431",
+      "institution": "ins1",
+      "medical_record_num": "3"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "3.433380433181725",
+      "institution": "ins1",
+      "medical_record_num": "4"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "2.013560010338339",
+      "institution": "ins1",
+      "medical_record_num": "5"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "2.058174385708484",
+      "institution": "ins1",
+      "medical_record_num": "6"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "3.1500342512128263",
+      "institution": "ins1",
+      "medical_record_num": "7"
+    },
+    {
+      "abdominal_ultrasound": "脂肪肝",
+      "c_peptide": "2.3362032678693536",
+      "institution": "ins1",
+      "medical_record_num": "8"
+    },
+    {
+      "abdominal_ultrasound": "正常",
+      "c_peptide": "-0.0689877310057816",
+      "institution": "ins1",
+      "medical_record_num": "9"
+    },
+    {
+      "abdominal_ultrasound": "正常",
+      "c_peptide": "2.267239124075809",
+      "institution": "ins1",
+      "medical_record_num": "10"
+    }
+  ],
+  "task_name": "脱敏任务_2025-11-11T08-36-22",
+  "saved_file_path": "uploads/datamasking\\medical_data_4d1c6a5c.json"
+}

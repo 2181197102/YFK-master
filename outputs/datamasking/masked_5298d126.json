@@ -1,0 +1,42 @@
+[
+  {
+    "c_peptide": -9.29135048994531,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": 9.245535953701438,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": -16.957745396261814,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": -3.201337041120235,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": 15.640311925007563,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": 0.8666271977473876,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": 1.7637809158526174,
+    "abdominal_ultrasound": "正常"
+  },
+  {
+    "c_peptide": 4.023349289084811,
+    "abdominal_ultrasound": "正常"
+  },
+  {
+    "c_peptide": -1.6633058695860061,
+    "abdominal_ultrasound": "脂肪肝"
+  },
+  {
+    "c_peptide": 6.391109934104582,
+    "abdominal_ultrasound": "脂肪肝"
+  }
+]
