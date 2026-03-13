@@ -15,6 +15,7 @@ from modules.data_management.models import *
 from modules.system_config.models import *
 from modules.ins.models import *
 from modules.emergency.models import *
+from modules.datamasking.models import *
 
 __all__ = [
     'User', 'Role', 'UserRoleRelation', 'Group', 'UserGroupRelation',
@@ -24,5 +25,6 @@ __all__ = [
     'ins1_record', 'ins1_record_disease', 'ins1_record_data', 'ins1_doctor_record',
     'ins2_record', 'ins2_record_disease', 'ins2_record_data', 'ins2_doctor_record',
     'ins3_record', 'ins3_record_disease', 'ins3_record_data', 'ins3_doctor_record',
-    'Disease_data', 'HealthRecord24h'
+    'Disease_data', 'HealthRecord24h',
+    'DataMaskingTask', 'DataMaskingResult'
 ]

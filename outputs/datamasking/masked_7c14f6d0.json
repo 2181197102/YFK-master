@@ -1,0 +1,62 @@
+[
+  {
+    "abdominal_ultrasound": "正常",
+    "c_peptide": -9.992591952629503,
+    "institution": "ins1",
+    "medical_record_num": "1"
+  },
+  {
+    "abdominal_ultrasound": "正常",
+    "c_peptide": 5.602678301709243,
+    "institution": "ins1",
+    "medical_record_num": "2"
+  },
+  {
+    "abdominal_ultrasound": "脂肪肝",
+    "c_peptide": 0.5327863063553897,
+    "institution": "ins1",
+    "medical_record_num": "3"
+  },
+  {
+    "abdominal_ultrasound": "脂肪肝",
+    "c_peptide": -3.8600171291224843,
+    "institution": "ins1",
+    "medical_record_num": "4"
+  },
+  {
+    "abdominal_ultrasound": "正常",
+    "c_peptide": 3.032519746683668,
+    "institution": "ins1",
+    "medical_record_num": "5"
+  },
+  {
+    "abdominal_ultrasound": "脂肪肝",
+    "c_peptide": 7.609657434789543,
+    "institution": "ins1",
+    "medical_record_num": "6"
+  },
+  {
+    "abdominal_ultrasound": "脂肪肝",
+    "c_peptide": 25.269573449121744,
+    "institution": "ins1",
+    "medical_record_num": "7"
+  },
+  {
+    "abdominal_ultrasound": "正常",
+    "c_peptide": -0.3628576395873422,
+    "institution": "ins1",
+    "medical_record_num": "8"
+  },
+  {
+    "abdominal_ultrasound": "正常",
+    "c_peptide": 6.174711374963772,
+    "institution": "ins1",
+    "medical_record_num": "9"
+  },
+  {
+    "abdominal_ultrasound": "脂肪肝",
+    "c_peptide": -8.793841690400221,
+    "institution": "ins1",
+    "medical_record_num": "10"
+  }
+]

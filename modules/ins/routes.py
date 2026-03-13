@@ -123,62 +123,82 @@ def get_record_data():
         "institutions": ["ins1", "ins2"]
     }
     """
-    req_data = request.get_json()
-    user_id = get_jwt_identity()
+    try:
+        req_data = request.get_json()
+        user_id = get_jwt_identity()
 
-    # 获取客户端IP并检查白名单
-    client_ip = get_client_ip()
-    is_whitelist_ip = is_ip_in_whitelist(client_ip)
+        # 获取客户端IP并检查白名单
+        client_ip = get_client_ip()
+        is_whitelist_ip = is_ip_in_whitelist(client_ip)
 
-    # 检查工作时间
-    is_working_time_flag = is_working_time()
+        # 检查工作时间
+        is_working_time_flag = is_working_time()
 
-    # 更新访问追踪统计
-    update_access_tracking(user_id, client_ip, is_working_time_flag, is_whitelist_ip)
+        # 更新访问追踪统计
+        update_access_tracking(user_id, client_ip, is_working_time_flag, is_whitelist_ip)
 
-    # 2. 提取并验证参数
-    data_codes = req_data.get('data_code', [])
-    nums = req_data.get('nums', 0)
-    institutions = req_data.get('institutions', [])
-    # print(req_data)
-    # 3. 多机构数据查询
-    all_results = []
-    for ins in institutions:
-        model_record_data = INSTITUTION_RECORD_DATA[ins]
-        model_record = INSTITUTION_RECORD[ins]
-        ins_results = query_institution_data(model_record_data,model_record, data_codes, nums)
-        all_results.extend(ins_results)
+        # 2. 提取并验证参数
+        data_codes = req_data.get('data_code', [])
+        nums = req_data.get('nums', 0)
+        institutions = req_data.get('institutions', [])
+        # print(req_data)
+        # 3. 多机构数据查询
+        all_results = []
+        for ins in institutions:
+            model_record_data = INSTITUTION_RECORD_DATA[ins]
+            model_record = INSTITUTION_RECORD[ins]
+            ins_results = query_institution_data(model_record_data,model_record, data_codes, nums)
+            all_results.extend(ins_results)
 
-    data_code_details = {}
-    if data_codes:  # 避免空列表查询
-        # 查询条件：data_code在请求的data_codes中
-        disease_data_records = Disease_data.query.filter(
-            Disease_data.data_code.in_(data_codes)
-        ).all()
-        # 整理为 {data_code: 详细信息字典} 的格式
-        for record in disease_data_records:
-            data_code_details[record.data_code] = record.to_dict()
+        data_code_details = {}
+        if data_codes:  # 避免空列表查询
+            # 查询条件：data_code在请求的data_codes中
+            disease_data_records = Disease_data.query.filter(
+                Disease_data.data_code.in_(data_codes)
+            ).all()
+            # 整理为 {data_code: 详细信息字典} 的格式
+            for record in disease_data_records:
+                data_code_details[record.data_code] = record.to_dict()
 
-    sensitive = req_data.get('sensitive', 0)
-    Trustvalue = req_data.get('Trustvalue', 0)
-    # if is_single:
-    #     sensitive = sensitive + 0.2
-    # print(sensitive)
-    return jsonify({
-        "status": "success",
-        "message": f"成功查询到{len(all_results)}条数据",
-        "total_count": len(all_results),
-        "institutions": institutions,
-        "data_codes": data_codes,
-        "data_code_details": data_code_details,
-        "requested_nums": nums,
-        "client_ip": client_ip,
-        "is_whitelist_ip": is_whitelist_ip,
-        "is_working_time": is_working_time_flag,
-        "results": all_results,
-        "sensitive": sensitive,
-        "Trustvalue": Trustvalue,
-    }), 200
+        sensitive = req_data.get('sensitive', 0)
+        Trustvalue = req_data.get('Trustvalue', 0)
+        # if is_single:
+        #     sensitive = sensitive + 0.2
+        # print(sensitive)
+        return jsonify({
+            "status": "success",
+            "message": f"成功查询到{len(all_results)}条数据",
+            "total_count": len(all_results),
+            "institutions": institutions,
+            "data_codes": data_codes,
+            "data_code_details": data_code_details,
+            "requested_nums": nums,
+            "client_ip": client_ip,
+            "is_whitelist_ip": is_whitelist_ip,
+            "is_working_time": is_working_time_flag,
+            "results": all_results,
+            "sensitive": sensitive,
+            "Trustvalue": Trustvalue,
+        }), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        import traceback
+        print(f"[ERROR] Database error in /get_record_data: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": "数据库查询错误",
+            "detail": str(e)
+        }), 500
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Unexpected error in /get_record_data: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": "服务器内部错误",
+            "detail": str(e)
+        }), 500
 
 
 @medical_record_bp.route("/get_patient", methods=["GET"])
@@ -258,44 +278,71 @@ def get_disease_data_rows():
     """
     获取每个disease_code对应的所有完整行数据
     支持可选参数disease_code进行过滤，例如:
-    /disease-data-rows?disease_code=A000&disease_code=B159
+    /disease-data-codes?disease_code=A000&disease_code=B159
     """
-    # 获取查询参数中的disease_code列表
-    disease_codes = request.args.getlist('disease_code')
-    # 构建查询
-    query = Disease_data.query
+    try:
+        print(f"[DEBUG] /disease-data-codes endpoint called, method: {request.method}")
+        print(f"[DEBUG] Request args: {dict(request.args)}")
+        
+        # 获取查询参数中的disease_code列表
+        disease_codes = request.args.getlist('disease_code')
+        print(f"[DEBUG] Disease codes: {disease_codes}")
 
-    # 如果指定了disease_code参数，则过滤
-    if disease_codes:
-        query = query.filter(Disease_data.disease_code.in_(disease_codes))
+        # 构建查询
+        print(f"[DEBUG] Building query for Disease_data")
+        query = Disease_data.query
 
-    # 执行查询
-    results = query.all()
+        # 如果指定了disease_code参数，则过滤
+        if disease_codes:
+            print(f"[DEBUG] Filtering by disease_codes: {disease_codes}")
+            query = query.filter(Disease_data.disease_code.in_(disease_codes))
 
-    # 整理结果：按disease_code分组，收集对应的完整行数据
-    disease_data_map = defaultdict(list)
-    for item in results:
-        # 将对象转换为字典（假设模型类有to_dict()方法，若无则手动构造）
-        row_data = item.to_dict() if hasattr(item, 'to_dict') else {
-            column.name: getattr(item, column.name)
-            for column in item.__table__.columns
+        # 执行查询
+        print(f"[DEBUG] Executing query...")
+        results = query.all()
+        print(f"[DEBUG] Query returned {len(results)} results")
+
+        # 整理结果：按disease_code分组，收集对应的完整行数据
+        disease_data_map = defaultdict(list)
+        for item in results:
+            # 将对象转换为字典（假设模型类有to_dict()方法，若无则手动构造）
+            row_data = item.to_dict() if hasattr(item, 'to_dict') else {
+                column.name: getattr(item, column.name)
+                for column in item.__table__.columns
+            }
+            disease_data_map[item.disease_code].append(row_data)
+
+        # 转换为有序字典并排序（按disease_code排序）
+        sorted_result = {
+            disease_code: rows
+            for disease_code, rows in sorted(disease_data_map.items())
         }
-        disease_data_map[item.disease_code].append(row_data)
 
-    # 转换为有序字典并排序（按disease_code排序）
-    sorted_result = {
-        disease_code: rows
-        for disease_code, rows in sorted(disease_data_map.items())
-    }
+        # 计算总记录数
+        total_rows = sum(len(rows) for rows in sorted_result.values())
 
-    # 计算总记录数
-    total_rows = sum(len(rows) for rows in sorted_result.values())
-
-    return jsonify({
-        'status': 'success',
-        'data': sorted_result,
-        'message': f"共找到{len(sorted_result)}个疾病代码，对应{total_rows}行数据"
-    }), 200
+        return jsonify({
+            'status': 'success',
+            'data': sorted_result,
+            'message': f"共找到{len(sorted_result)}个疾病代码，对应{total_rows}行数据"
+        }), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print(f"[ERROR] Database error in /disease-data-codes: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': '数据库查询错误',
+            'detail': str(e)
+        }), 500
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Unexpected error in /disease-data-codes: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': '服务器内部错误',
+            'detail': str(e)
+        }), 500
 
 
 def keep_first_occurrence(lst):
